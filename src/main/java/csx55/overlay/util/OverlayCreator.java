@@ -12,10 +12,12 @@ public class OverlayCreator {
     private final int size;
     private int[][] matrix;
     private Map<String, List<ConnectedNode>> overlay;
+    private int numberOfThreads;
 
-    public OverlayCreator(List<String> nodes) {
+    public OverlayCreator(List<String> nodes, int numberOfThreads) {
         this.nodes = nodes;
         this.size = nodes.size();
+        this.numberOfThreads = numberOfThreads;
     }
 
     public void printMatrix() {
@@ -40,7 +42,7 @@ public class OverlayCreator {
             for (ConnectedNode connectedNode : connectedNodeList) {
                 partnerNodes.add(connectedNode.getName());
             }
-            MessagingNodesList messagingNodesList = new MessagingNodesList(partnerNodes);
+            MessagingNodesList messagingNodesList = new MessagingNodesList(partnerNodes, this.numberOfThreads);
             messagingNodeMap.put(key, messagingNodesList);
         }
         return messagingNodeMap;

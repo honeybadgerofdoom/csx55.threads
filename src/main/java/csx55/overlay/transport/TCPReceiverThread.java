@@ -3,10 +3,10 @@ package csx55.overlay.transport;
 import java.io.DataInputStream;
 import java.net.Socket;
 import java.io.IOException;
-
 import csx55.overlay.node.Node;
 import csx55.overlay.wireformats.Event;
 import csx55.overlay.wireformats.EventFactory;
+import csx55.overlay.wireformats.Protocol;
 
 public class TCPReceiverThread implements Runnable {
 
@@ -35,7 +35,8 @@ public class TCPReceiverThread implements Runnable {
 
                 EventFactory eventFactory = EventFactory.getInstance();
                 Event event = eventFactory.getEvent(data);
-                this.node.addEvent(event, this.socket);
+                if (event.getType() == Protocol.MESSAGE) this.node.addEventToThreadPool(event, this.socket);
+                else this.node.onEvent(event, this.socket);
             } catch (IOException se) {
                 System.out.println(se.getMessage());
                 break;

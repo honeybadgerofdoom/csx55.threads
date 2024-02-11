@@ -27,6 +27,7 @@ public class Registry implements Node {
     private int taskSummariesCollected = 0;
     private final ReentrantLock doneNodesLock = new ReentrantLock();
     private final ReentrantLock taskSummariesLock = new ReentrantLock();
+    private int numberOfThreads;
 
     public Registry(int portNumber) {
         this.portNumber = portNumber;
@@ -106,7 +107,7 @@ public class Registry implements Node {
         return this.serverSocket;
     }
 
-    public void addEvent(Event event, Socket socket) {
+    public void addEventToThreadPool(Event event, Socket socket) {
         this.eventQueue.add(new EventAndSocket(event, socket));
     };
 
@@ -261,13 +262,14 @@ public class Registry implements Node {
         }
     }
 
-    public void setupOverlay() {
+    public void setupOverlay(int numberOfThreads) {
+        this.numberOfThreads = numberOfThreads;
         createOverlay();
     }
 
     private void createOverlay() {
         List<String> nodes = new ArrayList<>(this.registryNodes.keySet());
-        this.overlayCreator = new OverlayCreator(nodes);
+        this.overlayCreator = new OverlayCreator(nodes, this.numberOfThreads);
         this.overlayCreator.createOverlay();
         sendMessagingNodesListToNodes();
     }

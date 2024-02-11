@@ -8,10 +8,12 @@ public class MessagingNodesList implements Event {
     private int messageType = Protocol.MESSAGING_NODES_LIST;
     private int numberOfPeerMessagingNodes;
     private List<String> info;
+    private int numberOfThreads;
 
-    public MessagingNodesList(List<String> info) {
+    public MessagingNodesList(List<String> info, int numberOfThreads) {
         this.numberOfPeerMessagingNodes = info.size();
         this.info = info;
+        this.numberOfThreads = numberOfThreads;
     }
 
     public MessagingNodesList(byte[] bytes) throws IOException {
@@ -30,6 +32,8 @@ public class MessagingNodesList implements Event {
             this.info.add(new String(currentInfoBytes));
         }
 
+        this.numberOfThreads = din.readInt();
+
         bArrayInputStream.close();
         din.close();
     }
@@ -40,6 +44,10 @@ public class MessagingNodesList implements Event {
 
     public List<String> getInfo() {
         return this.info;
+    }
+
+    public int getNumberOfThreads() {
+        return this.numberOfThreads;
     }
 
     public byte[] getBytes() throws IOException {
@@ -56,6 +64,8 @@ public class MessagingNodesList implements Event {
             dout.writeInt(elementLength);
             dout.write(infoBytes);
         }
+
+        dout.writeInt(this.numberOfThreads);
 
         dout.flush();
         marshalledBytes = baOutputStream.toByteArray();
