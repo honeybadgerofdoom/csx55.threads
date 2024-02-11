@@ -72,6 +72,7 @@ public class MessagingNode implements Node {
     }
 
     private void startThreadPool(int numberOfThreads) {
+        System.out.println("Starting thread pool with " + numberOfThreads + " threads.");
         this.eventQueue = new ConcurrentLinkedQueue<>();
         EventProcessorThread eventProcessorThread = new EventProcessorThread(this);
         int numberOfWorkers = numberOfThreads;
