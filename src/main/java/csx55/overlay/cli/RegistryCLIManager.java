@@ -30,12 +30,7 @@ public class RegistryCLIManager implements Runnable, CLIManager {
                 this.node.listMessagingNodes();
                 break;
             case "setup-overlay":
-                try {
-                    int numberOfLinks = Integer.parseInt(parsedInput[1]);
-                    this.node.setupOverlay(numberOfLinks);
-                } catch (ArrayIndexOutOfBoundsException e) {
-                    System.out.println("ERROR you must provide a NumberOfLinks (int) argument. " + e);
-                }
+                this.node.setupOverlay();
                 break;
             case "print-overlay":
                 this.node.printOverlay();

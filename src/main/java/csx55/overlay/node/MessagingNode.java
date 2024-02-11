@@ -208,6 +208,8 @@ public class MessagingNode implements Node {
                 Thread thread = new Thread(receiver);
                 thread.start();
                 PartnerNodeRef partnerNodeRef = new PartnerNodeRef(socket, 0);
+                PartnerConnectionRequest partnerConnectionRequest = new PartnerConnectionRequest(this.ipAddress, this.portNumber, 0);
+                partnerNodeRef.writeToSocket(partnerConnectionRequest);
                 this.partnerNodes.put(nodeInfo, partnerNodeRef);
                 numberOfConnections++;
             } catch (IOException e) {

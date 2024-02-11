@@ -8,15 +8,13 @@ import java.util.*;
 public class OverlayCreator {
 
     private final List<String> nodes;
-    private final int numberOfLinks;
 
     private final int size;
     private int[][] matrix;
     private Map<String, List<ConnectedNode>> overlay;
 
-    public OverlayCreator(List<String> nodes, int numberOfLinks) {
+    public OverlayCreator(List<String> nodes) {
         this.nodes = nodes;
-        this.numberOfLinks = numberOfLinks;
         this.size = nodes.size();
     }
 
