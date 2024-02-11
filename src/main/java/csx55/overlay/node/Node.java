@@ -13,7 +13,7 @@ public interface Node {
     public int getPortNumber();
     public ServerSocket getServerSocket();
     public void onEvent(Event event, Socket socket);
-    public void addEvent(Event event, Socket socket);
+    public void addEventToThreadPool(Event event, Socket socket);
     public ConcurrentLinkedQueue<EventAndSocket> getEventQueue();
 
     default void startTCPServerThread() {

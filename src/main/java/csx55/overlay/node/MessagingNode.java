@@ -43,7 +43,6 @@ public class MessagingNode implements Node {
         assignIpAddress();
         assignServerSocketAndPort();
         startTCPServerThread();
-        startEventQueue();
         connectToRegistry(this.registryIpAddress, this.registryPortNumber);
         registerSelf();
         manageCLI();
@@ -72,10 +71,11 @@ public class MessagingNode implements Node {
         }
     }
 
-    private void startEventQueue() {
+    private void startThreadPool(int numberOfThreads) {
+        System.out.println("Starting thread pool with " + numberOfThreads + " threads.");
         this.eventQueue = new ConcurrentLinkedQueue<>();
         EventProcessorThread eventProcessorThread = new EventProcessorThread(this);
-        int numberOfWorkers = 8;
+        int numberOfWorkers = numberOfThreads;
         for (int i = 0; i < numberOfWorkers; i++) {
             Thread thread = new Thread(eventProcessorThread);
             thread.start();
@@ -142,7 +142,7 @@ public class MessagingNode implements Node {
         return this.serverSocket;
     }
 
-    public void addEvent(Event event, Socket socket) {
+    public void addEventToThreadPool(Event event, Socket socket) {
         this.eventQueue.add(new EventAndSocket(event, socket));
     }
 
@@ -197,6 +197,8 @@ public class MessagingNode implements Node {
 
     private void handleMessagingNodesList(Event event) {
         List<String> info = ((MessagingNodesList) event).getInfo();
+        int numberOfThreads = ((MessagingNodesList) event).getNumberOfThreads();
+        startThreadPool(numberOfThreads);
         int numberOfConnections = 0;
         for (String nodeInfo : info) {
             String[] nodeInfoList = nodeInfo.split(":");
