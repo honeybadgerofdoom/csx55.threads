@@ -276,7 +276,7 @@ public class MessagingNode implements Node {
     }
 
     private void sendMessages(int numberOfRounds) {
-        MessagePassingThread messagePassingThread = new MessagePassingThread(this);
+        MessagePassingThread messagePassingThread = new MessagePassingThread(this, numberOfRounds);
         Thread thread = new Thread(messagePassingThread);
         thread.start();
     }
