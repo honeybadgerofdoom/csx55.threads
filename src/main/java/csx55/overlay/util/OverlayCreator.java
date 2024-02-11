@@ -1,7 +1,6 @@
 package csx55.overlay.util;
 
 import csx55.overlay.wireformats.LinkInfo;
-import csx55.overlay.wireformats.LinkWeights;
 import csx55.overlay.wireformats.MessagingNodesList;
 
 import java.util.*;
@@ -9,15 +8,13 @@ import java.util.*;
 public class OverlayCreator {
 
     private final List<String> nodes;
-    private final int numberOfLinks;
 
     private final int size;
     private int[][] matrix;
     private Map<String, List<ConnectedNode>> overlay;
 
-    public OverlayCreator(List<String> nodes, int numberOfLinks) {
+    public OverlayCreator(List<String> nodes) {
         this.nodes = nodes;
-        this.numberOfLinks = numberOfLinks;
         this.size = nodes.size();
     }
 
@@ -32,7 +29,6 @@ public class OverlayCreator {
     public void createOverlay() {
         setupMatrix();
         connectMatrixNeighbors();
-        fillMatrix();
         matrixToOverlay();
     }
 
@@ -48,20 +44,6 @@ public class OverlayCreator {
             messagingNodeMap.put(key, messagingNodesList);
         }
         return messagingNodeMap;
-    }
-
-    public LinkWeights buildLinkWeightsMessage() {
-        List<LinkInfo> allLinkInfo = new ArrayList<>();
-        for (String key : this.overlay.keySet()) {
-            List<ConnectedNode> connectedNodeList = this.overlay.get(key);
-            for (ConnectedNode connectedNode : connectedNodeList) {
-                String partnerString = connectedNode.getName();
-                int linkWeight = connectedNode.getWeight();
-                LinkInfo linkInfo = new LinkInfo(key, partnerString, linkWeight);
-                allLinkInfo.add(linkInfo);
-            }
-        }
-        return new LinkWeights(allLinkInfo);
     }
 
     public void printOverlay() {
@@ -124,7 +106,7 @@ public class OverlayCreator {
         for (int i = 0; i < this.size; i++) {
             for (int j = 0; j < this.size; j++) {
                 if (j <= i) continue; // Ignore bottom-diagonal of matrix...we already set those values
-                int newWeight = getRandomWeight();
+                int newWeight = 1;
                 if (i == 0 && j == this.size - 1) {
                     this.matrix[0][this.size - 1] = newWeight;
                     this.matrix[this.size - 1][0] = newWeight;
@@ -135,77 +117,6 @@ public class OverlayCreator {
                 }
             }
         }
-    }
-
-    private void fillMatrix() {
-//        int p = this.numberOfLinks;
-        int p = this.size - 2;
-        while (p > 1 && matrixIsNotFull()) {
-            for (int i = 0; i < this.size; i++) {
-                if (rowIsFull(i)) continue;
-                int j = i + p;
-                if (j > this.size - 1) {
-                    j = j - this.size;
-                }
-                int newWeight = getRandomWeight();
-                this.matrix[i][j] = newWeight;
-                this.matrix[j][i] = newWeight;
-            }
-            if (matrixIsImbalanced()) {
-                rewind(p);
-            }
-            p--;
-        }
-    }
-
-    private boolean matrixIsImbalanced() {
-        int[] firstRow = this.matrix[0];
-        int firstRowCount = 0;
-        for (int i : firstRow) {
-            if (i > 0) firstRowCount++;
-        }
-        for (int i = 1; i < this.size; i++) {
-            int[] row = this.matrix[i];
-            int rowCount = 0;
-            for (int j : row) {
-                if (j > 0) rowCount++;
-            }
-            if (rowCount != firstRowCount) return true;
-        }
-        return false;
-    }
-
-    private void rewind(int p) {
-        for (int i = 0; i < this.size; i++) {
-            int j = i + p;
-            if (j > this.size - 1) {
-                j = j - this.size;
-            }
-            this.matrix[i][j] = 0;
-            this.matrix[j][i] = 0;
-        }
-    }
-
-    private boolean matrixIsNotFull() {
-        int doneRows = 0;
-        for (int i = 0; i < this.size; i++) {
-            if (rowIsFull(i)) doneRows++;
-        }
-        return doneRows != this.size;
-    }
-
-    private boolean rowIsFull(int index) {
-        int count = 0;
-        int[] row = this.matrix[index];
-        for (int i : row) {
-            if (i > 0) count++;
-        }
-        return count == this.numberOfLinks;
-    }
-
-    public static int getRandomWeight() {
-        Random random = new Random(); // TODO Use a seed here coming from ctor?
-        return random.nextInt((10 - 1) + 1) + 1;
     }
 
     public static String getConnectedNodeListString(List<ConnectedNode> list) {

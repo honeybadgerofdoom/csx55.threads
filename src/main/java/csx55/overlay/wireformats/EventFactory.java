@@ -30,8 +30,6 @@ public class EventFactory {
                 return new DeregisterResponse(bytes);
             case (Protocol.MESSAGING_NODES_LIST):
                 return new MessagingNodesList(bytes);
-            case (Protocol.LINK_WEIGHTS):
-                return new LinkWeights(bytes);
             case (Protocol.PARTNER_CONNECTION_REQUEST):
                 return new PartnerConnectionRequest(bytes);
             case (Protocol.TASK_INITIATE):

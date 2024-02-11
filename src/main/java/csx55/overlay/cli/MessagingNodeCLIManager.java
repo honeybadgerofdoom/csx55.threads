@@ -32,9 +32,6 @@ public class MessagingNodeCLIManager implements Runnable, CLIManager {
             case ("list-partners"):
                 this.node.listPartners();
                 break;
-            case ("print-shortest-path"):
-                this.node.printPaths();
-                break;
             case ("poke"):
                 try {
                     String partner = parsedInput[1];
