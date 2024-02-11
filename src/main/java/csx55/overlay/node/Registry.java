@@ -303,19 +303,6 @@ public class Registry implements Node {
         }
     }
 
-    public void sendLinkWeights() {
-        LinkWeights allLinkWeights = this.overlayCreator.buildLinkWeightsMessage();
-        for (Socket socket : this.registryNodes.values()) {
-            try {
-                TCPSender sender = new TCPSender(socket);
-                byte[] bytes = allLinkWeights.getBytes();
-                sender.sendData(bytes);
-            } catch (IOException e) {
-                System.out.println("ERROR Sending LinkWeights message");
-            }
-        }
-    }
-
     public void listMessagingNodes() {
         for (String key : this.registryNodes.keySet()) {
             System.out.println(key);

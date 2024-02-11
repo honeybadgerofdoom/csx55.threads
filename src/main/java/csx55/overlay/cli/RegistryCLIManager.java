@@ -37,14 +37,8 @@ public class RegistryCLIManager implements Runnable, CLIManager {
                     System.out.println("ERROR you must provide a NumberOfLinks (int) argument. " + e);
                 }
                 break;
-            case "send-overlay-link-weights":
-                this.node.sendLinkWeights();
-                break;
             case "print-overlay":
                 this.node.printOverlay();
-                break;
-            case "print-matrix":
-                this.node.printMatrix();
                 break;
             case "start":
                 try {

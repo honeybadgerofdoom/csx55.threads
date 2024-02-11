@@ -1,8 +1,6 @@
 package csx55.overlay.node;
 
 import csx55.overlay.cli.MessagingNodeCLIManager;
-import csx55.overlay.dijkstra.DijkstraGraph;
-import csx55.overlay.dijkstra.ShortestPathCalculator;
 import csx55.overlay.transport.EventProcessorThread;
 import csx55.overlay.util.EventAndSocket;
 import csx55.overlay.util.TrafficStats;
@@ -32,16 +30,12 @@ public class MessagingNode implements Node {
     private ConcurrentHashMap<String, PartnerNodeRef> partnerNodes;
     private Socket socketToRegistry;
     private ConcurrentLinkedQueue<EventAndSocket> eventQueue;
-    private List<LinkInfo> linkInfoList;
-    private ShortestPathCalculator shortestPathCalculator;
-    private Set<String> allSinkNodes;
     private Random rng;
 
     public MessagingNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
         this.registryPortNumber = registryPortNumber;
         this.partnerNodes = new ConcurrentHashMap<>();
-        this.allSinkNodes = new HashSet<>();
     }
 
     public void doWork() {
@@ -128,10 +122,6 @@ public class MessagingNode implements Node {
         return this.partnerNodes;
     }
 
-    public ShortestPathCalculator getShortestPathCalculator() {
-        return this.shortestPathCalculator;
-    }
-
     public Random getRng() {
         return this.rng;
     }
@@ -167,9 +157,6 @@ public class MessagingNode implements Node {
                     break;
                 case (Protocol.MESSAGING_NODES_LIST):
                     handleMessagingNodesList(event);
-                    break;
-                case (Protocol.LINK_WEIGHTS):
-                    handleLinkWeights(event);
                     break;
                 case (Protocol.PARTNER_CONNECTION_REQUEST):
                     handlePartnerConnection(event, socket);
@@ -230,30 +217,6 @@ public class MessagingNode implements Node {
         System.out.println("All connections established. Number of connections: " + numberOfConnections);
     }
 
-    private void handleLinkWeights(Event event) {
-        this.linkInfoList = ((LinkWeights) event).getLinkInfoList();
-        for (LinkInfo linkInfo : this.linkInfoList) {
-            String node = linkInfo.getNode1();
-            String myNodeName = this.ipAddress + ":" + this.portNumber;
-            if (!node.equals(myNodeName)) continue;
-
-            String partnerNode = linkInfo.getNode2();
-            int linkWeight = linkInfo.getLinkWeight();
-            PartnerNodeRef partnerNodeRef = this.partnerNodes.get(partnerNode);
-            partnerNodeRef.setLinkWeight(linkWeight);
-            PartnerConnectionRequest partnerConnectionRequest = new PartnerConnectionRequest(this.ipAddress, this.portNumber, linkWeight);
-            Socket socket = partnerNodeRef.getSocket();
-            try {
-                byte[] bytes = partnerConnectionRequest.getBytes();
-                TCPSender sender = new TCPSender(socket);
-                sender.sendData(bytes);
-            } catch (IOException e) {
-                System.out.println("ERROR Trying to send PartnerConnectionRequest to " + partnerNode);
-            }
-        }
-        System.out.println("Link weights are received and processed. Ready to send messages.");
-    }
-
     private void handlePartnerConnection(Event event, Socket socket) {
         String ipAddress = ((PartnerConnectionRequest) event).getIpAddress();
         int port = ((PartnerConnectionRequest) event).getPortNumber();
@@ -265,27 +228,14 @@ public class MessagingNode implements Node {
 
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
-        buildPathRoutes();
-        try { Thread.sleep(500); } catch (InterruptedException e) { }
         sendMessages(numberOfRounds);
     }
 
     private void handleMessage(Event event) {
-        List<String> routePlan = ((Message) event).getRoutePlan();
-        String nodeName = this.ipAddress + ":" + this.portNumber;
-        int myIndex = routePlan.indexOf(nodeName);
-        if (myIndex > -1) {
-            if (myIndex == routePlan.size() - 1) {
-                handleMessageAccept(event);
-            }
-            else {
-                String nextInRoute = routePlan.get(myIndex + 1);
-                handleMessageRelay(event, nextInRoute);
-            }
-        }
-        else {
-            System.out.println("Failed to find self in route plan");
-        }
+        /*
+        * TODO
+        *  - Handle the message
+        * */
     }
 
     public void reportAllMessagesPassed() {
@@ -323,42 +273,10 @@ public class MessagingNode implements Node {
         System.out.println("Received Poke: " + message);
     }
 
-    private void handleMessageAccept(Event event) {
-        int payload = ((Message) event).getPayload();
-        this.trafficStats.updateReceivedMessages(payload);
-    }
-
-    private void handleMessageRelay(Event event, String partner) {
-        this.trafficStats.incrementRelayTracker();
-        PartnerNodeRef partnerNodeRef = this.partnerNodes.get(partner);
-        partnerNodeRef.writeToSocket(event);
-    }
-
     private void sendMessages(int numberOfRounds) {
-        MessagePassingThread messagePassingThread = new MessagePassingThread(this, numberOfRounds);
+        MessagePassingThread messagePassingThread = new MessagePassingThread(this);
         Thread thread = new Thread(messagePassingThread);
         thread.start();
-    }
-
-    public String getRandomSinkNode() {
-        int size = this.allSinkNodes.size();
-        List<String> sinks = new ArrayList<>(this.allSinkNodes);
-        int index = this.rng.nextInt(size);
-        return sinks.get(index);
-    }
-
-    private void buildPathRoutes() {
-        String nodeName = this.ipAddress + ":" + this.portNumber;
-        DijkstraGraph dijkstraGraph = new DijkstraGraph(this.linkInfoList, nodeName, this.allSinkNodes);
-        this.shortestPathCalculator = new ShortestPathCalculator(dijkstraGraph);
-    }
-
-    public void printPaths() {
-        try {
-            this.shortestPathCalculator.printPathMap();
-        } catch (NullPointerException e) {
-            System.out.println("Paths have not been calculated yet. Please submit the `start` command to the overlay first.");
-        }
     }
 
     public void listPartners() {
