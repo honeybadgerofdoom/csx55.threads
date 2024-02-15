@@ -48,6 +48,9 @@ public class RegistryCLIManager implements Runnable, CLIManager {
                     System.out.println("ERROR you must provide a NumberOfLinks (int) argument. " + e);
                 }
                 break;
+            case "task-report":
+                this.node.taskReport();
+                break;
             default:
                 System.out.println("Invalid command to the Registry: " + command);
         }

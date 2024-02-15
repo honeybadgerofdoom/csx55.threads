@@ -46,6 +46,12 @@ public class EventFactory {
                 return new PartnerPoke(bytes);
             case (Protocol.TASK_AVERAGE):
                 return new TaskAverage(bytes);
+            case (Protocol.TASK_DELIVERY):
+                return new TaskDelivery(bytes);
+            case (Protocol.TASK_REPORT_REQUEST):
+                return new TaskReportRequest(bytes);
+            case (Protocol.TASK_REPORT_RESPONSE):
+                return new TaskReportResponse(bytes);
             default:
                 System.out.println("getEvent() found no matching route, messageType: " + messageType);
                 return null;
