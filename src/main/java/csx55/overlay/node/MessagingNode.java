@@ -294,7 +294,8 @@ public class MessagingNode implements Node {
         TaskAverage taskAverage = (TaskAverage) event;
         if (taskAverage.nodeIsFirst(this.id)) {
             this.taskManager.setAverage(taskAverage.getAverage());
-            System.out.println("Found average: " + taskAverage.getAverage());
+            double average = taskAverage.getAverage() / taskAverage.getNumberOfNodes();
+            System.out.println("Found average: " + average);
         }
         else {
             String lastNode = taskAverage.processRelay(this.id, this.taskManager.getInitialNumberOfTasks());

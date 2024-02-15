@@ -46,8 +46,7 @@ public class TaskAverage implements Event {
 
     public String processRelay(String id, int numberOfTasks) {
         String lastNode = this.nodeIds.get(this.numberOfNodes - 1);
-        double summed = this.average + numberOfTasks;
-        this.average = summed / 2;
+        this.average += numberOfTasks; // FIXME Rename average to taskSum
         this.nodeIds.add(id);
         this.numberOfNodes++;
         System.out.println("TaskAverage start with " + this.nodeIds.get(0) + " average is now " + this.average);
