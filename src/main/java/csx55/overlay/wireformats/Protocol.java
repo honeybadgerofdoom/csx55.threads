@@ -16,6 +16,7 @@ public class Protocol {
     public static final int PARTNER_CONNECTION_REQUEST = 11;
     public static final int MESSAGE = 12;
     public static final int POKE = 13;
+    public static final int TASK_AVERAGE = 14;
     
     // status codes
     public static final byte SUCCESS = 1;
