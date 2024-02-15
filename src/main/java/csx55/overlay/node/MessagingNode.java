@@ -249,6 +249,14 @@ public class MessagingNode implements Node {
         PartnerNodeRef partnerNodeRef = this.partnerNodes.get(id);
         TaskAverage taskAverage = new TaskAverage(this.taskManager.getCurrentNumberOfTasks(), this.id);
         partnerNodeRef.writeToSocket(taskAverage);
+        while (!this.taskManager.averageIsSet()) { } // We can't hear anything from the registry during this time
+        System.out.println("Average has been set.");
+        if (this.taskManager.shouldGiveTasks()) {
+            System.out.println("Sending Tasks!");
+            TaskDelivery taskDelivery = new TaskDelivery(this.taskManager.getTaskDiff(), this.id);
+            this.taskManager.giveTasks(this.taskManager.getTaskDiff());
+            partnerNodeRef.writeToSocket(taskDelivery);
+        }
     }
 
     private void handleMessage(Event event) {
@@ -297,7 +305,9 @@ public class MessagingNode implements Node {
         TaskAverage taskAverage = (TaskAverage) event;
         if (taskAverage.nodeIsFirst(this.id)) {
             double average = (double) taskAverage.getSum() / taskAverage.getNumberOfNodes();
-            this.taskManager.setAverage(average);
+            synchronized (this.taskManager) {
+                this.taskManager.setAverage(average);
+            }
         }
         else {
             String lastNode = taskAverage.processRelay(this.id, this.taskManager.getCurrentNumberOfTasks());
@@ -311,6 +321,8 @@ public class MessagingNode implements Node {
     }
 
     private void handleTaskDelivery(Event event) {
+        System.out.println("Received TaskDelivery");
+        while (!this.taskManager.averageIsSet()) {}
         TaskDelivery taskDelivery = (TaskDelivery) event;
         if (!taskDelivery.nodeIsFirst(this.id)) {
             this.taskManager.handleTaskDelivery(taskDelivery);
@@ -323,6 +335,11 @@ public class MessagingNode implements Node {
                     }
                 }
             }
+        }
+        else {
+            int tasksLeft = taskDelivery.getNumTasks();
+            this.taskManager.absorbExcessTasks(tasksLeft);
+            System.out.println(this.taskManager);
         }
 
     }

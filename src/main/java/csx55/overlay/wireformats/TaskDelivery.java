@@ -70,7 +70,7 @@ public class TaskDelivery implements Event {
         return this.numberOfNodes;
     }
 
-    public double getNumTasks() {
+    public int getNumTasks() {
         return this.numTasks;
     }
 

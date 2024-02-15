@@ -10,6 +10,7 @@ public class TaskManager {
     private double average;
     private int taskDiff;
     private boolean needsMoreTasks = false;
+    private boolean averageUpdated = false;
 
     public TaskManager(MessagingNode node) {
         this.node = node;
@@ -23,6 +24,16 @@ public class TaskManager {
             this.currentNumberOfTasks += tasksTaken;
             updateTaskDiff();
         }
+    }
+
+    public synchronized void giveTasks(int tasksToGive) {
+        this.currentNumberOfTasks -= tasksToGive;
+        updateTaskDiff();
+    }
+
+    public synchronized void absorbExcessTasks(int excessTasks) {
+        this.currentNumberOfTasks += excessTasks;
+        updateTaskDiff();
     }
 
     private void updateTaskDiff() {
@@ -45,14 +56,24 @@ public class TaskManager {
     public void setAverage(double average) {
         this.average = average;
         updateTaskDiff();
+        averageUpdated = true;
+    }
+
+    public synchronized boolean averageIsSet() {
+        return this.averageUpdated;
+    }
+
+    public synchronized boolean shouldGiveTasks() {
+        return !this.needsMoreTasks;
     }
 
     public int getTaskDiff() {
         return this.taskDiff;
     }
 
-    public boolean needsMoreTasks() {
-        return this.needsMoreTasks;
+    @Override
+    public String toString() {
+        return "Tasks Held: " + this.currentNumberOfTasks + "\nAverage: " + (int) Math.floor(this.average);
     }
 
 }
