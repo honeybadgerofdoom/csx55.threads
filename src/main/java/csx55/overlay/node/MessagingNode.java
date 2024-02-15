@@ -8,6 +8,7 @@ import csx55.overlay.wireformats.*;
 import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.transport.MessagePassingThread;
+import csx55.overlay.util.TaskManager;
 
 import java.net.*;
 import java.io.*;
@@ -22,6 +23,7 @@ public class MessagingNode implements Node {
 
     private String ipAddress;
     private int portNumber;
+    private String id;
     private final String registryIpAddress;
     private final int registryPortNumber;
 
@@ -31,6 +33,7 @@ public class MessagingNode implements Node {
     private Socket socketToRegistry;
     private ConcurrentLinkedQueue<EventAndSocket> eventQueue;
     private Random rng;
+    private TaskManager taskManager;
 
     public MessagingNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
@@ -66,6 +69,7 @@ public class MessagingNode implements Node {
             this.serverSocket = new ServerSocket(0);
             this.portNumber = this.serverSocket.getLocalPort();
             this.rng = new Random(this.portNumber);
+            this.id = this.ipAddress + ":" + this.portNumber;
         } catch (IOException e) {
             System.out.println("ERROR Failed to create ServerSocket...\n" + e);
         }
@@ -173,6 +177,9 @@ public class MessagingNode implements Node {
                 case (Protocol.POKE):
                     handlePoke(event);
                     break;
+                case (Protocol.TASK_AVERAGE):
+                    handleTaskAverage(event);
+                    break;
                 default:
                     System.out.println("onEvent couldn't handle event type");
             }
@@ -218,7 +225,7 @@ public class MessagingNode implements Node {
                 System.out.println("Failed to create Socket to partner " + nodeInfo);
             }
         }
-        System.out.println("All connections established. Number of connections: " + numberOfConnections);
+        System.out.println("All connections established Number of connections: " + numberOfConnections);
     }
 
     private void handlePartnerConnection(Event event, Socket socket) {
@@ -232,7 +239,13 @@ public class MessagingNode implements Node {
 
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
-        sendMessages(numberOfRounds);
+        this.taskManager = new TaskManager(this);
+        System.out.println("Initial number of tasks: " + this.taskManager.getCurrentNumberOfTasks());
+        List<String> partnerIds = new ArrayList<>(this.partnerNodes.keySet());
+        String id = partnerIds.get(0);
+        PartnerNodeRef partnerNodeRef = this.partnerNodes.get(id);
+        TaskAverage taskAverage = new TaskAverage(this.taskManager.getCurrentNumberOfTasks(), this.id);
+        partnerNodeRef.writeToSocket(taskAverage);
     }
 
     private void handleMessage(Event event) {
@@ -275,6 +288,23 @@ public class MessagingNode implements Node {
     private void handlePoke(Event event) {
         String message = ((PartnerPoke) event).getMessage();
         System.out.println("Received Poke: " + message);
+    }
+
+    private void handleTaskAverage(Event event) {
+        TaskAverage taskAverage = (TaskAverage) event;
+        if (taskAverage.nodeIsFirst(this.id)) {
+            double average = (double) taskAverage.getSum() / taskAverage.getNumberOfNodes();
+            this.taskManager.setAverage(average);
+        }
+        else {
+            String lastNode = taskAverage.processRelay(this.id, this.taskManager.getCurrentNumberOfTasks());
+            for (String key : this.partnerNodes.keySet()) {
+                if (!key.equals(lastNode)) {
+                    PartnerNodeRef partnerNodeRef = this.partnerNodes.get(key);
+                    partnerNodeRef.writeToSocket(taskAverage);
+                }
+            }
+        }
     }
 
     private void sendMessages(int numberOfRounds) {

@@ -35,8 +35,7 @@ public class TCPReceiverThread implements Runnable {
 
                 EventFactory eventFactory = EventFactory.getInstance();
                 Event event = eventFactory.getEvent(data);
-                if (event.getType() == Protocol.MESSAGE) this.node.addEventToThreadPool(event, this.socket);
-                else this.node.onEvent(event, this.socket);
+                this.node.onEvent(event, this.socket);
             } catch (IOException se) {
                 System.out.println(se.getMessage());
                 break;
