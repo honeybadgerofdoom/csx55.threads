@@ -125,6 +125,9 @@ public class Registry implements Node {
             case (Protocol.TRAFFIC_SUMMARY):
                 handleTrafficSummary(event);
                 break;
+            case (Protocol.TASK_REPORT_RESPONSE):
+                handleTaskReportResponse(event);
+                break;
             default:
                 System.out.println("onEvent trying to process invalid evernt type: " + event.getType());
         }
@@ -194,6 +197,11 @@ public class Registry implements Node {
             this.numberOfDoneNodes = 0;
             this.taskSummariesCollected = 0;
         }
+    }
+
+    private void handleTaskReportResponse(Event event) {
+        TaskReportResponse taskReportResponse = (TaskReportResponse) event;
+        System.out.println(taskReportResponse);
     }
 
     private void printFinalOutput() {
@@ -305,8 +313,17 @@ public class Registry implements Node {
 
     public void initiateMessagePassing(int numberOfRounds) {
         TaskInitiate taskInitiateMessage = new TaskInitiate(numberOfRounds);
+        sendToAllNodes(taskInitiateMessage);
+    }
+
+    public void taskReport() {
+        TaskReportRequest taskReportRequest = new TaskReportRequest();
+        sendToAllNodes(taskReportRequest);
+    }
+
+    private void sendToAllNodes(Event event) {
         try {
-            byte[] bytes = taskInitiateMessage.getBytes();
+            byte[] bytes = event.getBytes();
             for (Socket socket : this.registryNodes.values()) {
                 TCPSender sender = new TCPSender(socket);
                 sender.sendData(bytes);

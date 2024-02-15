@@ -183,6 +183,9 @@ public class MessagingNode implements Node {
                 case (Protocol.TASK_DELIVERY):
                     handleTaskDelivery(event);
                     break;
+                case (Protocol.TASK_REPORT_REQUEST):
+                    handleTaskReport(event);
+                    break;
                 default:
                     System.out.println("onEvent couldn't handle event type");
             }
@@ -243,16 +246,13 @@ public class MessagingNode implements Node {
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
         this.taskManager = new TaskManager(this);
-        System.out.println("Initial number of tasks: " + this.taskManager.getCurrentNumberOfTasks());
         List<String> partnerIds = new ArrayList<>(this.partnerNodes.keySet());
         String id = partnerIds.get(0);
         PartnerNodeRef partnerNodeRef = this.partnerNodes.get(id);
         TaskAverage taskAverage = new TaskAverage(this.taskManager.getCurrentNumberOfTasks(), this.id);
         partnerNodeRef.writeToSocket(taskAverage);
         while (!this.taskManager.averageIsSet()) { } // We can't hear anything from the registry during this time
-        System.out.println("Average has been set.");
         if (this.taskManager.shouldGiveTasks()) {
-            System.out.println("Sending Tasks!");
             TaskDelivery taskDelivery = new TaskDelivery(this.taskManager.getTaskDiff(), this.id);
             this.taskManager.giveTasks(this.taskManager.getTaskDiff());
             partnerNodeRef.writeToSocket(taskDelivery);
@@ -321,7 +321,6 @@ public class MessagingNode implements Node {
     }
 
     private void handleTaskDelivery(Event event) {
-        System.out.println("Received TaskDelivery");
         while (!this.taskManager.averageIsSet()) {}
         TaskDelivery taskDelivery = (TaskDelivery) event;
         if (!taskDelivery.nodeIsFirst(this.id)) {
@@ -339,7 +338,18 @@ public class MessagingNode implements Node {
         else {
             int tasksLeft = taskDelivery.getNumTasks();
             this.taskManager.absorbExcessTasks(tasksLeft);
-            System.out.println(this.taskManager);
+        }
+
+    }
+
+    private void handleTaskReport(Event event) {
+        TaskReportResponse taskReportResponse = new TaskReportResponse(this.id, this.taskManager.getCurrentNumberOfTasks(), this.taskManager.getInitialNumberOfTasks());
+        try {
+            TCPSender sender = new TCPSender(socketToRegistry);
+            byte[] bytes = taskReportResponse.getBytes();
+            sender.sendData(bytes);
+        } catch (IOException e) {
+            System.out.println("Failed to send TaskReportResponse " + e);
         }
 
     }

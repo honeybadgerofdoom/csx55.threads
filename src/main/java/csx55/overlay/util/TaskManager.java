@@ -6,6 +6,7 @@ import csx55.overlay.wireformats.TaskDelivery;
 public class TaskManager {
 
     private int currentNumberOfTasks;
+    private final int initialNumberOfTasks;
     private MessagingNode node;
     private double average;
     private int taskDiff;
@@ -14,7 +15,9 @@ public class TaskManager {
 
     public TaskManager(MessagingNode node) {
         this.node = node;
-        this.currentNumberOfTasks = node.getRng().nextInt(1001);
+        int randomNumberOfTasks = node.getRng().nextInt(1001);
+        this.currentNumberOfTasks = randomNumberOfTasks;
+        this.initialNumberOfTasks = randomNumberOfTasks;
     }
 
     public synchronized void handleTaskDelivery(TaskDelivery taskDelivery) {
@@ -40,11 +43,9 @@ public class TaskManager {
         int flooredAverage = (int) Math.floor(this.average);
         this.taskDiff = Math.abs(flooredAverage - this.currentNumberOfTasks);
         if (flooredAverage - 1 > this.currentNumberOfTasks) {
-            System.out.println("-" + taskDiff + " task deficit");
             this.needsMoreTasks = true;
         }
         else {
-            System.out.println("+" + taskDiff + " task excess");
             this.needsMoreTasks = false;
         }
     }
@@ -69,6 +70,10 @@ public class TaskManager {
 
     public int getTaskDiff() {
         return this.taskDiff;
+    }
+
+    public int getInitialNumberOfTasks() {
+        return this.initialNumberOfTasks;
     }
 
     @Override
