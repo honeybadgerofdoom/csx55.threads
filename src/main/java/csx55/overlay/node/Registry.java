@@ -285,6 +285,7 @@ public class Registry implements Node {
     private void sendMessagingNodesListToNodes() {
         Map<String, MessagingNodesList> messagingNodesListMap = this.overlayCreator.overlayToMessagingNodesListMap();
         for (String key : messagingNodesListMap.keySet()) {
+            System.out.println("Sending MessagingNodesList to " + key);
             Socket socket = this.registryNodes.get(key);
             MessagingNodesList messagingNodesList = messagingNodesListMap.get(key);
             try {

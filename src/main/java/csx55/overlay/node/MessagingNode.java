@@ -8,6 +8,7 @@ import csx55.overlay.wireformats.*;
 import csx55.overlay.transport.TCPReceiverThread;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.transport.MessagePassingThread;
+import csx55.overlay.util.TaskManager;
 
 import java.net.*;
 import java.io.*;
@@ -31,6 +32,7 @@ public class MessagingNode implements Node {
     private Socket socketToRegistry;
     private ConcurrentLinkedQueue<EventAndSocket> eventQueue;
     private Random rng;
+    private TaskManager taskManager;
 
     public MessagingNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
@@ -218,7 +220,7 @@ public class MessagingNode implements Node {
                 System.out.println("Failed to create Socket to partner " + nodeInfo);
             }
         }
-        System.out.println("All connections established. Number of connections: " + numberOfConnections);
+        System.out.println("All connections established Number of connections: " + numberOfConnections);
     }
 
     private void handlePartnerConnection(Event event, Socket socket) {
@@ -232,7 +234,8 @@ public class MessagingNode implements Node {
 
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
-        sendMessages(numberOfRounds);
+        TaskManager taskManager = new TaskManager(this);
+        System.out.println("Initial number of tasks: " + taskManager.getInitialNumberOfTasks());
     }
 
     private void handleMessage(Event event) {

@@ -4,15 +4,25 @@ import csx55.overlay.node.MessagingNode;
 
 public class TaskManager {
 
-    private double numberOfTasks;
+    private int initialNumberOfTasks;
+    private int numberOfTasks;
     private MessagingNode node;
 
     public TaskManager(MessagingNode node) {
         this.node = node;
+        this.initialNumberOfTasks = node.getRng().nextInt(1001);
     }
 
-    public double getNumberOfTasks() {
+    public int getInitialNumberOfTasks() {
+        return initialNumberOfTasks;
+    }
+
+    public int getNumberOfTasks() {
         return numberOfTasks;
+    }
+
+    public void setNumberOfTasks(int numberOfTasks) {
+        this.numberOfTasks = numberOfTasks;
     }
 
 }
