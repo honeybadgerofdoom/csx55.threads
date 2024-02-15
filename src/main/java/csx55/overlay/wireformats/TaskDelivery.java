@@ -4,27 +4,27 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.*;
 
-public class TaskAverage implements Event {
+public class TaskDelivery implements Event {
 
-    private int messageType = Protocol.TASK_AVERAGE;
-    private int sum;
+    private int messageType = Protocol.TASK_DELIVERY;
+    private int numTasks;
     private int numberOfNodes;
     private List<String> nodeIds;
 
-    public TaskAverage(int numberOfTasks, String id) {
-        this.sum = numberOfTasks;
+    public TaskDelivery(int numberOfTasks, String id) {
+        this.numTasks = numberOfTasks;
         this.numberOfNodes = 1;
         this.nodeIds = new ArrayList<>();
         this.nodeIds.add(id);
     }
 
-    public TaskAverage(byte[] bytes) throws IOException {
+    public TaskDelivery(byte[] bytes) throws IOException {
         ByteArrayInputStream bArrayInputStream = new ByteArrayInputStream(bytes);
         DataInputStream din = new DataInputStream(new BufferedInputStream(bArrayInputStream));
 
         din.readInt(); // take messageType out of stream
 
-        this.sum = din.readInt();
+        this.numTasks = din.readInt();
         this.numberOfNodes = din.readInt();
 
         this.nodeIds = new ArrayList<>();
@@ -43,12 +43,23 @@ public class TaskAverage implements Event {
         return this.messageType;
     }
 
-    public String processRelay(String id, int numberOfTasks) {
+    public String processRelay(String id) {
         String lastNode = this.nodeIds.get(this.numberOfNodes - 1);
-        this.sum += numberOfTasks;
         this.nodeIds.add(id);
         this.numberOfNodes++;
         return lastNode;
+    }
+
+    public synchronized int takeTasks(int tasksToTake) {
+        if (tasksToTake > this.numTasks) {
+            int tasksToGive =  this.numTasks;
+            this.numTasks = 0;
+            return tasksToGive;
+        }
+        else {
+            this.numTasks -= tasksToTake;
+            return tasksToTake;
+        }
     }
 
     public boolean nodeIsFirst(String id) {
@@ -59,8 +70,8 @@ public class TaskAverage implements Event {
         return this.numberOfNodes;
     }
 
-    public double getSum() {
-        return this.sum;
+    public double getNumTasks() {
+        return this.numTasks;
     }
 
     public byte[] getBytes() throws IOException {
@@ -69,7 +80,7 @@ public class TaskAverage implements Event {
         DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
 
         dout.writeInt(this.messageType);
-        dout.writeInt(this.sum);
+        dout.writeInt(this.numTasks);
         dout.writeInt(this.numberOfNodes);
 
         for (String id : this.nodeIds) {

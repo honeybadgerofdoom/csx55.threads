@@ -17,6 +17,7 @@ public class Protocol {
     public static final int MESSAGE = 12;
     public static final int POKE = 13;
     public static final int TASK_AVERAGE = 14;
+    public static final int TASK_DELIVERY = 15;
     
     // status codes
     public static final byte SUCCESS = 1;

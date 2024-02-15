@@ -180,6 +180,9 @@ public class MessagingNode implements Node {
                 case (Protocol.TASK_AVERAGE):
                     handleTaskAverage(event);
                     break;
+                case (Protocol.TASK_DELIVERY):
+                    handleTaskDelivery(event);
+                    break;
                 default:
                     System.out.println("onEvent couldn't handle event type");
             }
@@ -305,6 +308,23 @@ public class MessagingNode implements Node {
                 }
             }
         }
+    }
+
+    private void handleTaskDelivery(Event event) {
+        TaskDelivery taskDelivery = (TaskDelivery) event;
+        if (!taskDelivery.nodeIsFirst(this.id)) {
+            this.taskManager.handleTaskDelivery(taskDelivery);
+            if (taskDelivery.getNumTasks() > 0) {
+                String lastNode = taskDelivery.processRelay(this.id);
+                for (String key : this.partnerNodes.keySet()) {
+                    if (!key.equals(lastNode)) {
+                        PartnerNodeRef partnerNodeRef = this.partnerNodes.get(key);
+                        partnerNodeRef.writeToSocket(taskDelivery);
+                    }
+                }
+            }
+        }
+
     }
 
     private void sendMessages(int numberOfRounds) {
