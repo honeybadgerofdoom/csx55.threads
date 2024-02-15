@@ -7,14 +7,16 @@ import java.io.*;
 
 public class TaskAverage implements Event {
 
-    private int messageType = Protocol.MESSAGING_NODES_LIST;
+    private int messageType = Protocol.TASK_AVERAGE;
     private double average;
     private int numberOfNodes;
     private List<String> nodeIds;
 
-    public TaskAverage(double average) {
-        this.average = average;
+    public TaskAverage(int numberOfTasks, String id) {
+        this.average = (double) numberOfTasks;
         this.numberOfNodes = 1;
+        this.nodeIds = new ArrayList<>();
+        this.nodeIds.add(id);
     }
 
     public TaskAverage(byte[] bytes) throws IOException {
@@ -42,11 +44,14 @@ public class TaskAverage implements Event {
         return this.messageType;
     }
 
-    public void processRelay(String id, int numberOfTasks) {
+    public String processRelay(String id, int numberOfTasks) {
+        String lastNode = this.nodeIds.get(this.numberOfNodes - 1);
         double summed = this.average + numberOfTasks;
         this.average = summed / 2;
         this.nodeIds.add(id);
         this.numberOfNodes++;
+        System.out.println("TaskAverage start with " + this.nodeIds.get(0) + " average is now " + this.average);
+        return lastNode;
     }
 
     public boolean nodeIsFirst(String id) {
@@ -74,6 +79,7 @@ public class TaskAverage implements Event {
         ByteArrayOutputStream baOutputStream = new ByteArrayOutputStream();
         DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
 
+        dout.writeInt(this.messageType);
         dout.writeDouble(this.average);
         dout.writeInt(this.numberOfNodes);
 

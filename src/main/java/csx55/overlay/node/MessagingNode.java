@@ -23,6 +23,7 @@ public class MessagingNode implements Node {
 
     private String ipAddress;
     private int portNumber;
+    private String id;
     private final String registryIpAddress;
     private final int registryPortNumber;
 
@@ -68,6 +69,7 @@ public class MessagingNode implements Node {
             this.serverSocket = new ServerSocket(0);
             this.portNumber = this.serverSocket.getLocalPort();
             this.rng = new Random(this.portNumber);
+            this.id = this.ipAddress + ":" + this.portNumber;
         } catch (IOException e) {
             System.out.println("ERROR Failed to create ServerSocket...\n" + e);
         }
@@ -175,6 +177,9 @@ public class MessagingNode implements Node {
                 case (Protocol.POKE):
                     handlePoke(event);
                     break;
+                case (Protocol.TASK_AVERAGE):
+                    handleTaskAverage(event);
+                    break;
                 default:
                     System.out.println("onEvent couldn't handle event type");
             }
@@ -234,8 +239,13 @@ public class MessagingNode implements Node {
 
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
-        TaskManager taskManager = new TaskManager(this);
-        System.out.println("Initial number of tasks: " + taskManager.getInitialNumberOfTasks());
+        this.taskManager = new TaskManager(this);
+        System.out.println("Initial number of tasks: " + this.taskManager.getInitialNumberOfTasks());
+        List<String> partnerIds = new ArrayList<>(this.partnerNodes.keySet());
+        String id = partnerIds.get(0);
+        PartnerNodeRef partnerNodeRef = this.partnerNodes.get(id);
+        TaskAverage taskAverage = new TaskAverage(this.taskManager.getInitialNumberOfTasks(), this.id);
+        partnerNodeRef.writeToSocket(taskAverage);
     }
 
     private void handleMessage(Event event) {
@@ -278,6 +288,24 @@ public class MessagingNode implements Node {
     private void handlePoke(Event event) {
         String message = ((PartnerPoke) event).getMessage();
         System.out.println("Received Poke: " + message);
+    }
+
+    private void handleTaskAverage(Event event) {
+        TaskAverage taskAverage = (TaskAverage) event;
+        if (taskAverage.nodeIsFirst(this.id)) {
+            this.taskManager.setAverage(taskAverage.getAverage());
+            System.out.println("Found average: " + taskAverage.getAverage());
+        }
+        else {
+            String lastNode = taskAverage.processRelay(this.id, this.taskManager.getInitialNumberOfTasks());
+            for (String key : this.partnerNodes.keySet()) {
+                if (!key.equals(lastNode)) {
+                    System.out.println("Relaying TaskAverage message to " + key);
+                    PartnerNodeRef partnerNodeRef = this.partnerNodes.get(key);
+                    partnerNodeRef.writeToSocket(taskAverage);
+                }
+            }
+        }
     }
 
     private void sendMessages(int numberOfRounds) {

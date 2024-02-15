@@ -7,6 +7,7 @@ public class TaskManager {
     private int initialNumberOfTasks;
     private int numberOfTasks;
     private MessagingNode node;
+    private double average;
 
     public TaskManager(MessagingNode node) {
         this.node = node;
@@ -23,6 +24,10 @@ public class TaskManager {
 
     public void setNumberOfTasks(int numberOfTasks) {
         this.numberOfTasks = numberOfTasks;
+    }
+
+    public void setAverage(double average) {
+        this.average = average;
     }
 
 }
