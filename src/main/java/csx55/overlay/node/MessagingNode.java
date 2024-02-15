@@ -240,11 +240,11 @@ public class MessagingNode implements Node {
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
         this.taskManager = new TaskManager(this);
-        System.out.println("Initial number of tasks: " + this.taskManager.getInitialNumberOfTasks());
+        System.out.println("Initial number of tasks: " + this.taskManager.getCurrentNumberOfTasks());
         List<String> partnerIds = new ArrayList<>(this.partnerNodes.keySet());
         String id = partnerIds.get(0);
         PartnerNodeRef partnerNodeRef = this.partnerNodes.get(id);
-        TaskAverage taskAverage = new TaskAverage(this.taskManager.getInitialNumberOfTasks(), this.id);
+        TaskAverage taskAverage = new TaskAverage(this.taskManager.getCurrentNumberOfTasks(), this.id);
         partnerNodeRef.writeToSocket(taskAverage);
     }
 
@@ -293,15 +293,13 @@ public class MessagingNode implements Node {
     private void handleTaskAverage(Event event) {
         TaskAverage taskAverage = (TaskAverage) event;
         if (taskAverage.nodeIsFirst(this.id)) {
-            this.taskManager.setAverage(taskAverage.getAverage());
-            double average = taskAverage.getAverage() / taskAverage.getNumberOfNodes();
-            System.out.println("Found average: " + average);
+            double average = (double) taskAverage.getSum() / taskAverage.getNumberOfNodes();
+            this.taskManager.setAverage(average);
         }
         else {
-            String lastNode = taskAverage.processRelay(this.id, this.taskManager.getInitialNumberOfTasks());
+            String lastNode = taskAverage.processRelay(this.id, this.taskManager.getCurrentNumberOfTasks());
             for (String key : this.partnerNodes.keySet()) {
                 if (!key.equals(lastNode)) {
-                    System.out.println("Relaying TaskAverage message to " + key);
                     PartnerNodeRef partnerNodeRef = this.partnerNodes.get(key);
                     partnerNodeRef.writeToSocket(taskAverage);
                 }

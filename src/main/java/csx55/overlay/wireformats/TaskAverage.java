@@ -8,12 +8,12 @@ import java.io.*;
 public class TaskAverage implements Event {
 
     private int messageType = Protocol.TASK_AVERAGE;
-    private double average;
+    private int sum;
     private int numberOfNodes;
     private List<String> nodeIds;
 
     public TaskAverage(int numberOfTasks, String id) {
-        this.average = (double) numberOfTasks;
+        this.sum = numberOfTasks;
         this.numberOfNodes = 1;
         this.nodeIds = new ArrayList<>();
         this.nodeIds.add(id);
@@ -25,7 +25,7 @@ public class TaskAverage implements Event {
 
         din.readInt(); // take messageType out of stream
 
-        this.average = din.readDouble();
+        this.sum = din.readInt();
         this.numberOfNodes = din.readInt();
 
         this.nodeIds = new ArrayList<>();
@@ -46,10 +46,9 @@ public class TaskAverage implements Event {
 
     public String processRelay(String id, int numberOfTasks) {
         String lastNode = this.nodeIds.get(this.numberOfNodes - 1);
-        this.average += numberOfTasks; // FIXME Rename average to taskSum
+        this.sum += numberOfTasks;
         this.nodeIds.add(id);
         this.numberOfNodes++;
-        System.out.println("TaskAverage start with " + this.nodeIds.get(0) + " average is now " + this.average);
         return lastNode;
     }
 
@@ -57,20 +56,12 @@ public class TaskAverage implements Event {
         return id.equals(this.nodeIds.get(0));
     }
 
-    public String getLastNode() {
-        return this.nodeIds.get(this.numberOfNodes - 1);
-    }
-
     public int getNumberOfNodes() {
         return this.numberOfNodes;
     }
 
-    public List<String> getNodeIds() {
-        return this.nodeIds;
-    }
-
-    public double getAverage() {
-        return this.average;
+    public double getSum() {
+        return this.sum;
     }
 
     public byte[] getBytes() throws IOException {
@@ -79,7 +70,7 @@ public class TaskAverage implements Event {
         DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
 
         dout.writeInt(this.messageType);
-        dout.writeDouble(this.average);
+        dout.writeInt(this.sum);
         dout.writeInt(this.numberOfNodes);
 
         for (String id : this.nodeIds) {
