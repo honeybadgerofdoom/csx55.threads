@@ -41,6 +41,17 @@ public class TaskProcessor implements Runnable {
             *         MessagingNode instances that created this TaskProcessor. This won't work.
             *       - We could maintain a data structure where each index is an iteration and the value within
             *         is a TaskManager reference?
+            *       - OR
+            *       - Every TaskAverage and TaskDelivery message have an `int iteration` which corresponding to the iteration
+            *         count associated to it
+            *       - Once the load is balanced for a given iteration, THEN add that # tasks to the taskQueue
+            *       - Send a TaskConfirmation (has `int iteration`) message around the ring, wait for it to come back,
+            *         then add those tasks to the taskQueue
+            *       -> Steps, for each iteration:
+            *           - Generate random #
+            *           - Get group average
+            *           - Balance load
+            *           - Add tasks to taskQueue
             * */
         }
     }
