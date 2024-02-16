@@ -34,7 +34,13 @@ public class TaskProcessor implements Runnable {
             *  - Code was initially written to only balance the load once
             *  - Now we must calculate new averages and balance new loads every iteration, in a thread-safe way
             *    between `n` MessagingNode instances
-            *       -> This is where it gets tricksy
+            *       -> This is where it gets tricky
+            *       - handleTaskAverage() & handleTaskDelivery() won't be able to rely on an instance of TaskManager
+            *       - Maybe we toss the TaskManager and figure out a new way to manage that data
+            *       - Basically, these iterations will be changing the TaskManager reference out from under the
+            *         MessagingNode instances that created this TaskProcessor. This won't work.
+            *       - We could maintain a data structure where each index is an iteration and the value within
+            *         is a TaskManager reference?
             * */
         }
     }
