@@ -1,8 +1,9 @@
 package csx55.overlay.node;
 
 import csx55.overlay.cli.MessagingNodeCLIManager;
-import csx55.overlay.transport.EventProcessorThread;
+import csx55.overlay.transport.TaskProcessor;
 import csx55.overlay.util.EventAndSocket;
+import csx55.overlay.util.ThreadPool;
 import csx55.overlay.util.TrafficStats;
 import csx55.overlay.wireformats.*;
 import csx55.overlay.transport.TCPReceiverThread;
@@ -31,9 +32,9 @@ public class MessagingNode implements Node {
 
     private ConcurrentHashMap<String, PartnerNodeRef> partnerNodes;
     private Socket socketToRegistry;
-    private ConcurrentLinkedQueue<EventAndSocket> eventQueue;
     private Random rng;
     private TaskManager taskManager;
+    private ThreadPool threadPool;
 
     public MessagingNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
@@ -48,6 +49,7 @@ public class MessagingNode implements Node {
         startTCPServerThread();
         connectToRegistry(this.registryIpAddress, this.registryPortNumber);
         registerSelf();
+        this.threadPool = new ThreadPool();
         manageCLI();
     }
 
@@ -72,17 +74,6 @@ public class MessagingNode implements Node {
             this.id = this.ipAddress + ":" + this.portNumber;
         } catch (IOException e) {
             System.out.println("ERROR Failed to create ServerSocket...\n" + e);
-        }
-    }
-
-    private void startThreadPool(int numberOfThreads) {
-        System.out.println("Starting thread pool with " + numberOfThreads + " threads.");
-        this.eventQueue = new ConcurrentLinkedQueue<>();
-        EventProcessorThread eventProcessorThread = new EventProcessorThread(this);
-        int numberOfWorkers = numberOfThreads;
-        for (int i = 0; i < numberOfWorkers; i++) {
-            Thread thread = new Thread(eventProcessorThread);
-            thread.start();
         }
     }
 
@@ -135,7 +126,8 @@ public class MessagingNode implements Node {
     }
 
     public ConcurrentLinkedQueue<EventAndSocket> getEventQueue() {
-        return this.eventQueue;
+//        return this.eventQueue;
+        return null;
     }
 
     public String getIpAddress() {
@@ -147,7 +139,23 @@ public class MessagingNode implements Node {
     }
 
     public void addEventToThreadPool(Event event, Socket socket) {
-        this.eventQueue.add(new EventAndSocket(event, socket));
+//        this.eventQueue.add(new EventAndSocket(event, socket));
+    }
+
+    public ThreadPool getThreadPool() {
+        return this.threadPool;
+    }
+
+    public String getId() {
+        return this.id;
+    }
+
+    public void setTaskManager(TaskManager taskManager) {
+        this.taskManager = taskManager;
+    }
+
+    public TaskManager getTaskManager() {
+        return this.taskManager;
     }
 
     public void onEvent(Event event, Socket socket) {
@@ -167,9 +175,6 @@ public class MessagingNode implements Node {
                     break;
                 case (Protocol.TASK_INITIATE):
                     handleTaskInitiate(event);
-                    break;
-                case (Protocol.MESSAGE):
-                    handleMessage(event);
                     break;
                 case (Protocol.PULL_TRAFFIC_SUMMARY):
                     handleTrafficSummary();
@@ -211,7 +216,7 @@ public class MessagingNode implements Node {
     private void handleMessagingNodesList(Event event) {
         List<String> info = ((MessagingNodesList) event).getInfo();
         int numberOfThreads = ((MessagingNodesList) event).getNumberOfThreads();
-        startThreadPool(numberOfThreads);
+        this.threadPool.startThreadPool(numberOfThreads);
         int numberOfConnections = 0;
         for (String nodeInfo : info) {
             String[] nodeInfoList = nodeInfo.split(":");
@@ -245,25 +250,13 @@ public class MessagingNode implements Node {
 
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
-        this.taskManager = new TaskManager(this);
-        List<String> partnerIds = new ArrayList<>(this.partnerNodes.keySet());
-        String id = partnerIds.get(0);
-        PartnerNodeRef partnerNodeRef = this.partnerNodes.get(id);
-        TaskAverage taskAverage = new TaskAverage(this.taskManager.getCurrentNumberOfTasks(), this.id);
-        partnerNodeRef.writeToSocket(taskAverage);
-        while (!this.taskManager.averageIsSet()) { } // We can't hear anything from the registry during this time
-        if (this.taskManager.shouldGiveTasks()) {
-            TaskDelivery taskDelivery = new TaskDelivery(this.taskManager.getTaskDiff(), this.id);
-            this.taskManager.giveTasks(this.taskManager.getTaskDiff());
-            partnerNodeRef.writeToSocket(taskDelivery);
-        }
+        TaskProcessor taskProcessor = new TaskProcessor(this, numberOfRounds);
     }
 
-    private void handleMessage(Event event) {
-        /*
-        * TODO
-        *  - Handle the message
-        * */
+    public PartnerNodeRef getOneNeighbor() {
+        List<String> partnerIds = new ArrayList<>(this.partnerNodes.keySet());
+        String id = partnerIds.get(0);
+        return this.partnerNodes.get(id);
     }
 
     public void reportAllMessagesPassed() {

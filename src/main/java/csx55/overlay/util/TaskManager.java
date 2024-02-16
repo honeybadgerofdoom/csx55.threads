@@ -3,19 +3,19 @@ package csx55.overlay.util;
 import csx55.overlay.node.MessagingNode;
 import csx55.overlay.wireformats.TaskDelivery;
 
+import java.util.Random;
+
 public class TaskManager {
 
     private int currentNumberOfTasks;
     private final int initialNumberOfTasks;
-    private MessagingNode node;
     private double average;
     private int taskDiff;
     private boolean needsMoreTasks = false;
     private boolean averageUpdated = false;
 
-    public TaskManager(MessagingNode node) {
-        this.node = node;
-        int randomNumberOfTasks = node.getRng().nextInt(1001);
+    public TaskManager(Random rng) {
+        int randomNumberOfTasks = rng.nextInt(1001);
         this.currentNumberOfTasks = randomNumberOfTasks;
         this.initialNumberOfTasks = randomNumberOfTasks;
     }

@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import csx55.overlay.cli.RegistryCLIManager;
 import csx55.overlay.transport.TCPSender;
-import csx55.overlay.transport.EventProcessorThread;
+import csx55.overlay.transport.TaskProcessor;
 import csx55.overlay.util.EventAndSocket;
 import csx55.overlay.util.OverlayCreator;
 import csx55.overlay.wireformats.*;
@@ -37,7 +37,6 @@ public class Registry implements Node {
     public void doWork() {
         assignServerSocket();
         startTCPServerThread();
-        startEventQueue();
         manageCLI();
         initializeOutputMaps();
     }
@@ -69,16 +68,6 @@ public class Registry implements Node {
             this.serverSocket = new ServerSocket(this.portNumber);
         } catch (IOException e) {
             System.out.println("ERROR Failed to create ServerSocket...\n" + e);
-        }
-    }
-
-    private void startEventQueue() {
-        this.eventQueue = new ConcurrentLinkedQueue<>();
-        EventProcessorThread eventProcessorThread = new EventProcessorThread(this);
-        int numberOfWorkers = 5;
-        for (int i = 0; i < numberOfWorkers; i++) {
-            Thread thread = new Thread(eventProcessorThread);
-            thread.start();
         }
     }
 
