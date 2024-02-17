@@ -37,23 +37,28 @@ public class TaskProcessor implements Runnable {
             balanceLoad(partnerNodeRef);
 
             // Wait until I'm load balanced, then send LoadBalanced message
-            System.out.println("Waiting until I'm load balanced...");
-            while (!taskManager.isLoadBalanced()) {}
+//            System.out.println("Waiting until I'm load balanced...");
+            // FIXME This is (predictably) causing a deadlock
+//            while (!taskManager.isLoadBalanced()) {}
 
             // ToDo add correct # tasks to taskQueue
 
-            System.out.println("Load is balanced. Relaying all LoadBalanced messages.");
+//            System.out.println("Load is balanced. Relaying all LoadBalanced messages.");
 
             // Forward all LoadBalanced messages in my loadBalancedList
-            for (LoadBalanced loadBalanced : this.loadBalancedList) {
-                relayLoadBalanced(loadBalanced);
-            }
+//            for (LoadBalanced loadBalanced : this.loadBalancedList) {
+//                relayLoadBalanced(loadBalanced);
+//            }
 
-            System.out.println("All LoadBalanced messages relayed. Waiting for my own LoadBalanced message");
+//            System.out.println("All LoadBalanced messages relayed. Waiting for my own LoadBalanced message");
 
             // Wait until I receive my own LoadBalanced message
-            while (!loadBalancedReceived) {}
-
+//            while (!loadBalancedReceive:seta
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                System.out.println("Failed to sleep thread " + e);
+            }
             System.out.println(taskManager);
 
         }

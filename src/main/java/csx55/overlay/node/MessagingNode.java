@@ -33,7 +33,6 @@ public class MessagingNode implements Node {
     private ConcurrentHashMap<String, PartnerNodeRef> partnerNodes;
     private Socket socketToRegistry;
     private Random rng;
-//    private TaskManager taskManager;
     private ThreadPool threadPool;
     private TaskProcessor taskProcessor;
 
@@ -254,6 +253,8 @@ public class MessagingNode implements Node {
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
         this.taskProcessor = new TaskProcessor(this, numberOfRounds);
+        Thread thread = new Thread(this.taskProcessor);
+        thread.start();
     }
 
     public PartnerNodeRef getOneNeighbor() {

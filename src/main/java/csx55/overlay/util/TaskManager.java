@@ -78,7 +78,7 @@ public class TaskManager {
         return this.initialNumberOfTasks;
     }
 
-    public boolean isLoadBalanced() {
+    public synchronized boolean isLoadBalanced() {
         return this.balanced;
     }
 
