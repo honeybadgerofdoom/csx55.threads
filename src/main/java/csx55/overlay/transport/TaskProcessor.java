@@ -51,7 +51,12 @@ public class TaskProcessor implements Runnable {
             *           - Generate random #
             *           - Get group average
             *           - Balance load
+            *               -> Send LoadBalanced message
+            *               -> If a node received a LoadBalanced message but is not yet balanced, it adds that msg to
+            *                  a data structure of LoadBalanced messages. Once it is balanced, it forwards all LoadBalanced
+            *                  messages in that data structure then sends its own LoadBalanced message.
             *           - Add tasks to taskQueue
+            *           - Wait until it receives the LoadBalanced message that IT sent
             * */
         }
     }
