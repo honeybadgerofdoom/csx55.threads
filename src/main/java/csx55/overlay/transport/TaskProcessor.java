@@ -4,15 +4,22 @@ import csx55.overlay.node.MessagingNode;
 import csx55.overlay.node.PartnerNodeRef;
 import csx55.overlay.util.TaskManager;
 import csx55.overlay.wireformats.Event;
+import csx55.overlay.wireformats.LoadBalanced;
 import csx55.overlay.wireformats.TaskAverage;
 import csx55.overlay.wireformats.TaskDelivery;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskProcessor implements Runnable {
 
     private MessagingNode node;
     private final int numberOfRounds;
+    private TaskManager taskManager;
+    private List<LoadBalanced> loadBalancedList = new ArrayList<>();
+    private boolean loadBalancedReceived;
 
     public TaskProcessor(MessagingNode node, int numberOfRounds) {
         this.node = node;
@@ -23,55 +30,113 @@ public class TaskProcessor implements Runnable {
         ConcurrentLinkedQueue<Event> taskQueue = this.node.getThreadPool().getTaskQueue();
         PartnerNodeRef partnerNodeRef = this.node.getOneNeighbor();
         for (int i = 0; i < this.numberOfRounds; i++) {
-            TaskManager taskManager = new TaskManager(this.node.getRng());
-            this.node.setTaskManager(taskManager);
+            System.out.println("Beginning iteration " + i);
+            loadBalancedReceived = false;
+            this.taskManager = new TaskManager(this.node.getRng());
             getTaskAverage(partnerNodeRef);
             balanceLoad(partnerNodeRef);
-            /*
-            * TODO
-            *  - Load up tasks into taskQueue
-            *  - Figure out how to manage synchronization of load balances per round
-            *  - Code was initially written to only balance the load once
-            *  - Now we must calculate new averages and balance new loads every iteration, in a thread-safe way
-            *    between `n` MessagingNode instances
-            *       -> This is where it gets tricky
-            *       - handleTaskAverage() & handleTaskDelivery() won't be able to rely on an instance of TaskManager
-            *       - Maybe we toss the TaskManager and figure out a new way to manage that data
-            *       - Basically, these iterations will be changing the TaskManager reference out from under the
-            *         MessagingNode instances that created this TaskProcessor. This won't work.
-            *       - We could maintain a data structure where each index is an iteration and the value within
-            *         is a TaskManager reference?
-            *       - OR
-            *       - Every TaskAverage and TaskDelivery message have an `int iteration` which corresponding to the iteration
-            *         count associated to it
-            *       - Once the load is balanced for a given iteration, THEN add that # tasks to the taskQueue
-            *       - Send a TaskConfirmation (has `int iteration`) message around the ring, wait for it to come back,
-            *         then add those tasks to the taskQueue
-            *       -> Steps, for each iteration:
-            *           - Generate random #
-            *           - Get group average
-            *           - Balance load
-            *               -> Send LoadBalanced message
-            *               -> If a node received a LoadBalanced message but is not yet balanced, it adds that msg to
-            *                  a data structure of LoadBalanced messages. Once it is balanced, it forwards all LoadBalanced
-            *                  messages in that data structure then sends its own LoadBalanced message.
-            *           - Add tasks to taskQueue
-            *           - Wait until it receives the LoadBalanced message that IT sent
-            * */
+
+            // Wait until I'm load balanced, then send LoadBalanced message
+            System.out.println("Waiting until I'm load balanced...");
+            while (!taskManager.isLoadBalanced()) {}
+
+            // ToDo add correct # tasks to taskQueue
+
+            System.out.println("Load is balanced. Relaying all LoadBalanced messages.");
+
+            // Forward all LoadBalanced messages in my loadBalancedList
+            for (LoadBalanced loadBalanced : this.loadBalancedList) {
+                relayLoadBalanced(loadBalanced);
+            }
+
+            System.out.println("All LoadBalanced messages relayed. Waiting for my own LoadBalanced message");
+
+            // Wait until I receive my own LoadBalanced message
+            while (!loadBalancedReceived) {}
+
+            System.out.println(taskManager);
+
         }
     }
 
     private void getTaskAverage(PartnerNodeRef partnerNodeRef) {
-        TaskAverage taskAverage = new TaskAverage(this.node.getTaskManager().getCurrentNumberOfTasks(), this.node.getId());
+        TaskAverage taskAverage = new TaskAverage(this.taskManager.getCurrentNumberOfTasks(), this.node.getId());
         partnerNodeRef.writeToSocket(taskAverage);
     }
 
     private void balanceLoad(PartnerNodeRef partnerNodeRef) {
-        while (!this.node.getTaskManager().averageIsSet()) {} // We can't hear anything from the registry during this time
-        if (this.node.getTaskManager().shouldGiveTasks()) {
-            TaskDelivery taskDelivery = new TaskDelivery(this.node.getTaskManager().getTaskDiff(), this.node.getId());
-            this.node.getTaskManager().giveTasks(this.node.getTaskManager().getTaskDiff());
+        while (!this.taskManager.averageIsSet()) {} // We can't hear anything from the registry during this time
+        if (this.taskManager.shouldGiveTasks()) {
+            TaskDelivery taskDelivery = new TaskDelivery(this.taskManager.getTaskDiff(), this.node.getId());
+            this.taskManager.giveTasks(this.taskManager.getTaskDiff());
             partnerNodeRef.writeToSocket(taskDelivery);
+        }
+    }
+
+    public void handleTaskAverage(TaskAverage taskAverage) {
+        if (taskAverage.nodeIsFirst(this.node.getId())) {
+            double average = (double) taskAverage.getSum() / taskAverage.getNumberOfNodes();
+            synchronized (this.taskManager) {
+                this.taskManager.setAverage(average);
+            }
+        }
+        else {
+            String lastNode = taskAverage.processRelay(this.node.getId(), this.taskManager.getCurrentNumberOfTasks());
+            for (String key : this.node.getPartnerNodes().keySet()) {
+                if (!key.equals(lastNode)) {
+                    PartnerNodeRef partnerNodeRef = this.node.getPartnerNodes().get(key);
+                    partnerNodeRef.writeToSocket(taskAverage);
+                }
+            }
+        }
+    }
+
+    public void handleTaskDelivery(TaskDelivery taskDelivery) {
+        while (!this.taskManager.averageIsSet()) {}
+        if (!taskDelivery.nodeIsFirst(this.node.getId())) {
+            this.taskManager.handleTaskDelivery(taskDelivery);
+            if (taskDelivery.getNumTasks() > 0) {
+                String lastNode = taskDelivery.processRelay(this.node.getId());
+                for (String key : this.node.getPartnerNodes().keySet()) {
+                    if (!key.equals(lastNode)) {
+                        PartnerNodeRef partnerNodeRef = this.node.getPartnerNodes().get(key);
+                        partnerNodeRef.writeToSocket(taskDelivery);
+                    }
+                }
+            }
+        }
+        else {
+            int tasksLeft = taskDelivery.getNumTasks();
+            this.taskManager.absorbExcessTasks(tasksLeft);
+        }
+
+    }
+
+    public void handleLoadBalanced(LoadBalanced loadBalanced) {
+        /*
+        * TODO
+        *  - If this message originated with me, I can iterate
+        *  - If I'm load balanced, relay the message
+        *  - Else, push the message into my loadBalancedList
+        * */
+        if (loadBalanced.nodeIsFirst(this.node.getId())) {
+            this.loadBalancedReceived = true;
+        }
+        else if (this.taskManager.isLoadBalanced()) {
+            relayLoadBalanced(loadBalanced);
+        }
+        else {
+            this.loadBalancedList.add(loadBalanced);
+        }
+    }
+
+    private void relayLoadBalanced(LoadBalanced loadBalanced) {
+        String lastNode = loadBalanced.processRelay(this.node.getId());
+        for (String key : this.node.getPartnerNodes().keySet()) {
+            if (!key.equals(lastNode)) {
+                PartnerNodeRef relayTarget = this.node.getPartnerNodes().get(key);
+                relayTarget.writeToSocket(loadBalanced);
+            }
         }
     }
 

@@ -33,8 +33,9 @@ public class MessagingNode implements Node {
     private ConcurrentHashMap<String, PartnerNodeRef> partnerNodes;
     private Socket socketToRegistry;
     private Random rng;
-    private TaskManager taskManager;
+//    private TaskManager taskManager;
     private ThreadPool threadPool;
+    private TaskProcessor taskProcessor;
 
     public MessagingNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
@@ -150,13 +151,13 @@ public class MessagingNode implements Node {
         return this.id;
     }
 
-    public void setTaskManager(TaskManager taskManager) {
-        this.taskManager = taskManager;
-    }
-
-    public TaskManager getTaskManager() {
-        return this.taskManager;
-    }
+//    public void setTaskManager(TaskManager taskManager) {
+//        this.taskManager = taskManager;
+//    }
+//
+//    public TaskManager getTaskManager() {
+//        return this.taskManager;
+//    }
 
     public void onEvent(Event event, Socket socket) {
         if (event != null) {
@@ -191,6 +192,8 @@ public class MessagingNode implements Node {
                 case (Protocol.TASK_REPORT_REQUEST):
                     handleTaskReport(event);
                     break;
+                case (Protocol.LOAD_BALANCED):
+                    handleLoadBalanced(event);
                 default:
                     System.out.println("onEvent couldn't handle event type");
             }
@@ -250,7 +253,7 @@ public class MessagingNode implements Node {
 
     private void handleTaskInitiate(Event event) {
         int numberOfRounds = ((TaskInitiate) event).getRounds();
-        TaskProcessor taskProcessor = new TaskProcessor(this, numberOfRounds);
+        this.taskProcessor = new TaskProcessor(this, numberOfRounds);
     }
 
     public PartnerNodeRef getOneNeighbor() {
@@ -296,55 +299,28 @@ public class MessagingNode implements Node {
 
     private void handleTaskAverage(Event event) {
         TaskAverage taskAverage = (TaskAverage) event;
-        if (taskAverage.nodeIsFirst(this.id)) {
-            double average = (double) taskAverage.getSum() / taskAverage.getNumberOfNodes();
-            synchronized (this.taskManager) {
-                this.taskManager.setAverage(average);
-            }
-        }
-        else {
-            String lastNode = taskAverage.processRelay(this.id, this.taskManager.getCurrentNumberOfTasks());
-            for (String key : this.partnerNodes.keySet()) {
-                if (!key.equals(lastNode)) {
-                    PartnerNodeRef partnerNodeRef = this.partnerNodes.get(key);
-                    partnerNodeRef.writeToSocket(taskAverage);
-                }
-            }
-        }
+        this.taskProcessor.handleTaskAverage(taskAverage);
     }
 
     private void handleTaskDelivery(Event event) {
-        while (!this.taskManager.averageIsSet()) {}
         TaskDelivery taskDelivery = (TaskDelivery) event;
-        if (!taskDelivery.nodeIsFirst(this.id)) {
-            this.taskManager.handleTaskDelivery(taskDelivery);
-            if (taskDelivery.getNumTasks() > 0) {
-                String lastNode = taskDelivery.processRelay(this.id);
-                for (String key : this.partnerNodes.keySet()) {
-                    if (!key.equals(lastNode)) {
-                        PartnerNodeRef partnerNodeRef = this.partnerNodes.get(key);
-                        partnerNodeRef.writeToSocket(taskDelivery);
-                    }
-                }
-            }
-        }
-        else {
-            int tasksLeft = taskDelivery.getNumTasks();
-            this.taskManager.absorbExcessTasks(tasksLeft);
-        }
+        this.taskProcessor.handleTaskDelivery(taskDelivery);
+    }
 
+    private void handleLoadBalanced(Event event) {
+        LoadBalanced loadBalanced = (LoadBalanced) event;
+        this.taskProcessor.handleLoadBalanced(loadBalanced);
     }
 
     private void handleTaskReport(Event event) {
-        TaskReportResponse taskReportResponse = new TaskReportResponse(this.id, this.taskManager.getCurrentNumberOfTasks(), this.taskManager.getInitialNumberOfTasks());
-        try {
-            TCPSender sender = new TCPSender(socketToRegistry);
-            byte[] bytes = taskReportResponse.getBytes();
-            sender.sendData(bytes);
-        } catch (IOException e) {
-            System.out.println("Failed to send TaskReportResponse " + e);
-        }
-
+//        TaskReportResponse taskReportResponse = new TaskReportResponse(this.id, this.taskManager.getCurrentNumberOfTasks(), this.taskManager.getInitialNumberOfTasks());
+//        try {
+//            TCPSender sender = new TCPSender(socketToRegistry);
+//            byte[] bytes = taskReportResponse.getBytes();
+//            sender.sendData(bytes);
+//        } catch (IOException e) {
+//            System.out.println("Failed to send TaskReportResponse " + e);
+//        }
     }
 
     private void sendMessages(int numberOfRounds) {

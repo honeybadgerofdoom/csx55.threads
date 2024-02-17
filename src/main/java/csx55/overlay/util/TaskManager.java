@@ -13,6 +13,7 @@ public class TaskManager {
     private int taskDiff;
     private boolean needsMoreTasks = false;
     private boolean averageUpdated = false;
+    private boolean balanced = false;
 
     public TaskManager(Random rng) {
         int randomNumberOfTasks = rng.nextInt(1001);
@@ -47,6 +48,7 @@ public class TaskManager {
         }
         else {
             this.needsMoreTasks = false;
+            this.balanced = true;
         }
     }
 
@@ -74,6 +76,10 @@ public class TaskManager {
 
     public int getInitialNumberOfTasks() {
         return this.initialNumberOfTasks;
+    }
+
+    public boolean isLoadBalanced() {
+        return this.balanced;
     }
 
     @Override
