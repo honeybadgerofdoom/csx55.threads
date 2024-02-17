@@ -45,10 +45,12 @@ public class TaskManager {
         this.taskDiff = Math.abs(flooredAverage - this.currentNumberOfTasks);
         if (flooredAverage - 1 > this.currentNumberOfTasks) {
             this.needsMoreTasks = true;
+//            System.out.println("-" + this.taskDiff + " task deficit");
         }
         else {
             this.needsMoreTasks = false;
             this.balanced = true;
+//            System.out.println("+" + this.taskDiff + " task excess");
         }
     }
 

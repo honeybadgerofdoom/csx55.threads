@@ -160,7 +160,8 @@ public class MessagingNode implements Node {
 
     public void onEvent(Event event, Socket socket) {
         if (event != null) {
-            switch (event.getType()) {
+            int type = event.getType();
+            switch (type) {
                 case (Protocol.REGISTER_RESPONSE):
                     handleRegisterResponse(event);
                     break;
@@ -193,8 +194,9 @@ public class MessagingNode implements Node {
                     break;
                 case (Protocol.LOAD_BALANCED):
                     handleLoadBalanced(event);
+                    break;
                 default:
-                    System.out.println("onEvent couldn't handle event type");
+                    System.out.println("onEvent couldn't handle event type " + type);
             }
         }
     }

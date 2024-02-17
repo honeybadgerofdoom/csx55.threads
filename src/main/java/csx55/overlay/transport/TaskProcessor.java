@@ -8,9 +8,7 @@ import csx55.overlay.wireformats.LoadBalanced;
 import csx55.overlay.wireformats.TaskAverage;
 import csx55.overlay.wireformats.TaskDelivery;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskProcessor implements Runnable {
@@ -18,8 +16,8 @@ public class TaskProcessor implements Runnable {
     private MessagingNode node;
     private final int numberOfRounds;
     private TaskManager taskManager;
-    private List<LoadBalanced> loadBalancedList = new ArrayList<>();
-    private boolean loadBalancedReceived;
+    private Queue<LoadBalanced> loadBalancedQueue = new ArrayDeque<>();
+    private volatile boolean loadBalancedReceived;
 
     public TaskProcessor(MessagingNode node, int numberOfRounds) {
         this.node = node;
@@ -36,29 +34,34 @@ public class TaskProcessor implements Runnable {
             getTaskAverage(partnerNodeRef);
             balanceLoad(partnerNodeRef);
 
-            // Wait until I'm load balanced, then send LoadBalanced message
-//            System.out.println("Waiting until I'm load balanced...");
-            // FIXME This is (predictably) causing a deadlock
-//            while (!taskManager.isLoadBalanced()) {}
+            System.out.println("Waiting until I'm load balanced...");
+            while (!taskManager.isLoadBalanced()) {}
+
+
+            System.out.println("Load is balanced, sending LoadBalanced message...");
+            LoadBalanced myLoadBalanced = new LoadBalanced(this.node.getId());
+            partnerNodeRef.writeToSocket(myLoadBalanced);
 
             // ToDo add correct # tasks to taskQueue
 
-//            System.out.println("Load is balanced. Relaying all LoadBalanced messages.");
+            System.out.println("Relaying all " + this.loadBalancedQueue.size() + " LoadBalanced messages.");
+            while (!this.loadBalancedQueue.isEmpty()) {
+                LoadBalanced loadBalanced = this.loadBalancedQueue.poll();
+                relayLoadBalanced(loadBalanced);
+            }
 
-            // Forward all LoadBalanced messages in my loadBalancedList
-//            for (LoadBalanced loadBalanced : this.loadBalancedList) {
-//                relayLoadBalanced(loadBalanced);
+            System.out.println("All LoadBalanced messages relayed. Waiting for my own LoadBalanced message...");
+            while (!loadBalancedReceived) {
+                Thread.onSpinWait();
+            }
+            System.out.println("Received my own LoadBalanced message");
+
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//                System.out.println("Failed to sleep thread " + e);
 //            }
 
-//            System.out.println("All LoadBalanced messages relayed. Waiting for my own LoadBalanced message");
-
-            // Wait until I receive my own LoadBalanced message
-//            while (!loadBalancedReceive:seta
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                System.out.println("Failed to sleep thread " + e);
-            }
             System.out.println(taskManager);
 
         }
@@ -70,7 +73,9 @@ public class TaskProcessor implements Runnable {
     }
 
     private void balanceLoad(PartnerNodeRef partnerNodeRef) {
-        while (!this.taskManager.averageIsSet()) {} // We can't hear anything from the registry during this time
+        while (!this.taskManager.averageIsSet()) {
+            Thread.onSpinWait();
+        } // We can't hear anything from the registry during this time
         if (this.taskManager.shouldGiveTasks()) {
             TaskDelivery taskDelivery = new TaskDelivery(this.taskManager.getTaskDiff(), this.node.getId());
             this.taskManager.giveTasks(this.taskManager.getTaskDiff());
@@ -97,7 +102,9 @@ public class TaskProcessor implements Runnable {
     }
 
     public void handleTaskDelivery(TaskDelivery taskDelivery) {
-        while (!this.taskManager.averageIsSet()) {}
+        while (!this.taskManager.averageIsSet()) {
+            Thread.onSpinWait();
+        }
         if (!taskDelivery.nodeIsFirst(this.node.getId())) {
             this.taskManager.handleTaskDelivery(taskDelivery);
             if (taskDelivery.getNumTasks() > 0) {
@@ -117,12 +124,10 @@ public class TaskProcessor implements Runnable {
 
     }
 
-    public void handleLoadBalanced(LoadBalanced loadBalanced) {
+    public synchronized void handleLoadBalanced(LoadBalanced loadBalanced) {
         /*
-        * TODO
-        *  - If this message originated with me, I can iterate
-        *  - If I'm load balanced, relay the message
-        *  - Else, push the message into my loadBalancedList
+        * FIXME
+        *  - This isn't working, check logic
         * */
         if (loadBalanced.nodeIsFirst(this.node.getId())) {
             this.loadBalancedReceived = true;
@@ -131,7 +136,7 @@ public class TaskProcessor implements Runnable {
             relayLoadBalanced(loadBalanced);
         }
         else {
-            this.loadBalancedList.add(loadBalanced);
+            this.loadBalancedQueue.add(loadBalanced);
         }
     }
 

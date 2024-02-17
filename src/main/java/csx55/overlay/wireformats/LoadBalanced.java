@@ -6,11 +6,11 @@ import java.io.*;
 
 public class LoadBalanced implements Event {
 
-    private int messageType = Protocol.TASK_DELIVERY;
+    private int messageType = Protocol.LOAD_BALANCED;
     private int numberOfNodes;
     private List<String> nodeIds;
 
-    public LoadBalanced(int numberOfTasks, String id) {
+    public LoadBalanced(String id) {
         this.numberOfNodes = 1;
         this.nodeIds = new ArrayList<>();
         this.nodeIds.add(id);
