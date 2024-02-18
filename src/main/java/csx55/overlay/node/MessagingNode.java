@@ -192,9 +192,6 @@ public class MessagingNode implements Node {
                 case (Protocol.TASK_REPORT_REQUEST):
                     handleTaskReport(event);
                     break;
-                case (Protocol.LOAD_BALANCED):
-                    handleLoadBalanced(event);
-                    break;
                 default:
                     System.out.println("onEvent couldn't handle event type " + type);
             }
@@ -308,11 +305,6 @@ public class MessagingNode implements Node {
     private void handleTaskDelivery(Event event) {
         TaskDelivery taskDelivery = (TaskDelivery) event;
         this.taskProcessor.handleTaskDelivery(taskDelivery);
-    }
-
-    private void handleLoadBalanced(Event event) {
-        LoadBalanced loadBalanced = (LoadBalanced) event;
-        this.taskProcessor.handleLoadBalanced(loadBalanced);
     }
 
     private void handleTaskReport(Event event) {

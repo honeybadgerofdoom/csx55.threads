@@ -1,8 +1,6 @@
 package csx55.overlay.util;
 
-import csx55.overlay.node.MessagingNode;
 import csx55.overlay.wireformats.TaskDelivery;
-
 import java.util.Random;
 
 public class TaskManager {
@@ -13,7 +11,6 @@ public class TaskManager {
     private int taskDiff;
     private boolean needsMoreTasks = false;
     private boolean averageUpdated = false;
-    private boolean balanced = false;
 
     public TaskManager(Random rng) {
         int randomNumberOfTasks = rng.nextInt(1001);
@@ -49,7 +46,6 @@ public class TaskManager {
         }
         else {
             this.needsMoreTasks = false;
-            this.balanced = true;
 //            System.out.println("+" + this.taskDiff + " task excess");
         }
     }
@@ -78,10 +74,6 @@ public class TaskManager {
 
     public int getInitialNumberOfTasks() {
         return this.initialNumberOfTasks;
-    }
-
-    public synchronized boolean isLoadBalanced() {
-        return this.balanced;
     }
 
     @Override

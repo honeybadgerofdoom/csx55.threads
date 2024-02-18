@@ -20,7 +20,6 @@ public class Protocol {
     public static final int TASK_DELIVERY = 15;
     public static final int TASK_REPORT_REQUEST = 16;
     public static final int TASK_REPORT_RESPONSE = 17;
-    public static final int LOAD_BALANCED = 18;
     
     // status codes
     public static final byte SUCCESS = 1;

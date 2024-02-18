@@ -15,7 +15,8 @@ public class TaskProcessor implements Runnable {
     private MessagingNode node;
     private final int numberOfRounds;
     private List<TaskManager> taskManagerList;
-
+    private int totalTasksProcessed = 0;
+    ConcurrentLinkedQueue<Event> taskQueue;
 
     public TaskProcessor(MessagingNode node, int numberOfRounds) {
         this.node = node;
@@ -23,8 +24,9 @@ public class TaskProcessor implements Runnable {
     }
 
     public void run() {
-        ConcurrentLinkedQueue<Event> taskQueue = this.node.getThreadPool().getTaskQueue();
+        this.taskQueue = this.node.getThreadPool().getTaskQueue();
         PartnerNodeRef partnerNodeRef = this.node.getOneNeighbor();
+        this.taskManagerList = new ArrayList<>();
 
         for (int i = 0; i < this.numberOfRounds; i++) {
             TaskManager taskManager = new TaskManager(this.node.getRng());
@@ -32,17 +34,22 @@ public class TaskProcessor implements Runnable {
         }
 
         for (int i = 0; i < this.numberOfRounds; i++) {
-
-            TaskManager taskManager = new TaskManager(this.node.getRng());
-            
             getTaskAverage(partnerNodeRef, i);
-
             balanceLoad(partnerNodeRef, i);
-
-            
-            System.out.println(taskManager);
-            
         }
+    }
+
+    private synchronized void updateTotal(int num) {
+        this.totalTasksProcessed += num;
+    }
+
+    private void addToTaskQueue(int numberOfTasksToAdd) {
+        updateTotal(numberOfTasksToAdd);
+        /**
+         * ToDo
+         *  - Create `numberOfTasksToAdd` tasks
+         *  - this.taskQueue.addAll(tasks)
+         */
     }
 
     private void getTaskAverage(PartnerNodeRef partnerNodeRef, int iteration) {
@@ -54,10 +61,17 @@ public class TaskProcessor implements Runnable {
     private void balanceLoad(PartnerNodeRef partnerNodeRef, int iteration) {
         TaskManager taskManager = this.taskManagerList.get(iteration);
         while (!taskManager.averageIsSet()) {
-            // Thread.onSpinWait();
+            //  Thread.onSpinWait();
         } // We can't hear anything from the registry during this time
+
+        // ToDo refactor this trash
         if (taskManager.shouldGiveTasks()) {
             TaskDelivery taskDelivery = new TaskDelivery(taskManager.getTaskDiff(), this.node.getId(), iteration);
+            taskManager.giveTasks(taskManager.getTaskDiff());
+            partnerNodeRef.writeToSocket(taskDelivery);
+        }
+        else {
+            TaskDelivery taskDelivery = new TaskDelivery(0, this.node.getId(), iteration);
             taskManager.giveTasks(taskManager.getTaskDiff());
             partnerNodeRef.writeToSocket(taskDelivery);
         }
@@ -91,11 +105,12 @@ public class TaskProcessor implements Runnable {
         else {
             int tasksLeft = taskDelivery.getNumTasks();
             taskManager.absorbExcessTasks(tasksLeft);
+            addToTaskQueue(taskManager.getCurrentNumberOfTasks());
         }
     }
 
     private void relayTaskAverage(TaskManager taskManager, TaskAverage taskAverage) {
-        String lastNode = taskAverage.processRelay(this.node.getId(), taskManager.getCurrentNumberOfTasks());
+        String lastNode = taskAverage.processRelay(this.node.getId(), taskManager.getInitialNumberOfTasks());
         relay(lastNode, taskAverage);
     }
 
