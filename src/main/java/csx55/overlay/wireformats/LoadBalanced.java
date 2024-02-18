@@ -9,11 +9,13 @@ public class LoadBalanced implements Event {
     private int messageType = Protocol.LOAD_BALANCED;
     private int numberOfNodes;
     private List<String> nodeIds;
+    private int iteration = 1;
 
-    public LoadBalanced(String id) {
+    public LoadBalanced(String id, int iteration) {
         this.numberOfNodes = 1;
         this.nodeIds = new ArrayList<>();
         this.nodeIds.add(id);
+        this.iteration = iteration;
     }
 
     public LoadBalanced(byte[] bytes) throws IOException {
@@ -31,6 +33,8 @@ public class LoadBalanced implements Event {
             din.readFully(currentInfoBytes);
             this.nodeIds.add(new String(currentInfoBytes));
         }
+
+        this.iteration = din.readInt();
 
         bArrayInputStream.close();
         din.close();
@@ -55,6 +59,10 @@ public class LoadBalanced implements Event {
         return this.numberOfNodes;
     }
 
+    public int getIteration() {
+        return this.iteration;
+    }
+
     public byte[] getBytes() throws IOException {
         byte[] marshalledBytes = null;
         ByteArrayOutputStream baOutputStream = new ByteArrayOutputStream();
@@ -69,6 +77,8 @@ public class LoadBalanced implements Event {
             dout.writeInt(elementLength);
             dout.write(idBytes);
         }
+
+        dout.writeInt(this.iteration);
 
         dout.flush();
         marshalledBytes = baOutputStream.toByteArray();
