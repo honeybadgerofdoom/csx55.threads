@@ -37,6 +37,13 @@ public class TaskProcessor implements Runnable {
             getTaskAverage(partnerNodeRef, i);
             balanceLoad(partnerNodeRef, i);
         }
+
+        // Wait for all taskManagers to get balanced
+        for (TaskManager taskManager : this.taskManagerList) {
+            while (!taskManager.isBalanced()) {}
+        }
+        System.out.println("Total processed: " + this.totalTasksProcessed);
+
     }
 
     private synchronized void updateTotal(int num) {

@@ -11,6 +11,7 @@ public class TaskManager {
     private int taskDiff;
     private boolean needsMoreTasks = false;
     private boolean averageUpdated = false;
+    private boolean balanced = false;
 
     public TaskManager(Random rng) {
         int randomNumberOfTasks = rng.nextInt(1001);
@@ -35,6 +36,7 @@ public class TaskManager {
     public synchronized void absorbExcessTasks(int excessTasks) {
         this.currentNumberOfTasks += excessTasks;
         updateTaskDiff();
+        this.balanced = true;
     }
 
     private void updateTaskDiff() {
@@ -74,6 +76,10 @@ public class TaskManager {
 
     public int getInitialNumberOfTasks() {
         return this.initialNumberOfTasks;
+    }
+
+    public boolean isBalanced() {
+        return this.balanced;
     }
 
     @Override
