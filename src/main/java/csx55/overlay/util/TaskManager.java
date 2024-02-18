@@ -82,6 +82,10 @@ public class TaskManager {
         return this.balanced;
     }
 
+    public double getAverage() {
+        return this.average;
+    }
+
     @Override
     public String toString() {
         return "Tasks Held: " + this.currentNumberOfTasks + "\nAverage: " + (int) Math.floor(this.average);

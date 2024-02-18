@@ -32,17 +32,33 @@ public class TaskProcessor implements Runnable {
             TaskManager taskManager = new TaskManager(this.node.getRng());
             this.taskManagerList.add(taskManager);
         }
+        
+        System.out.println("Generated " + this.taskManagerList.size() + " taskManager instances. Sending TaskAverage messaages...");
 
         for (int i = 0; i < this.numberOfRounds; i++) {
             getTaskAverage(partnerNodeRef, i);
-            balanceLoad(partnerNodeRef, i);
         }
 
-        // Wait for all taskManagers to get balanced
+        System.out.println("All TaskAverage messages sent. Wait for all TaskManagers to have the averages set.");
+
         for (TaskManager taskManager : this.taskManagerList) {
-            while (!taskManager.isBalanced()) {}
+            while (!taskManager.averageIsSet()) {}
+            System.out.println("Average: " + taskManager.getAverage());
         }
-        System.out.println("Total processed: " + this.totalTasksProcessed);
+        
+        System.out.println("All TaskManagers have averages set.");
+
+        // for (int i = 0; i < this.numberOfRounds; i++) {
+        //     balanceLoad(partnerNodeRef, i);
+        // }
+
+        // System.out.println("All TaskDelivery messages sent. Waiting to balance all loads...");
+
+        // for (TaskManager taskManager : this.taskManagerList) {
+        //     while (!taskManager.isBalanced()) {}
+        // }
+
+        // System.out.println("All loads balanced. Total processed: " + this.totalTasksProcessed);
 
     }
 
@@ -92,7 +108,8 @@ public class TaskProcessor implements Runnable {
             synchronized (taskManager) {
                 taskManager.setAverage(average);
             }
-        } else {
+        } 
+        else {
             relayTaskAverage(taskManager, taskAverage);
         }
     }
