@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class ThreadPool {
 
     private ConcurrentLinkedQueue<Event> taskQueue;
+    private int totalTasks = 0;
 
     public ThreadPool() {
     }
@@ -22,6 +23,16 @@ public class ThreadPool {
             Thread thread = new Thread();
             thread.start();
         }
+    }
+
+    private synchronized void updateTotalTasks(int numTasks) {
+        this.totalTasks += numTasks;
+        System.out.println("Starting " + numTasks + " tasks. Current total is " + this.totalTasks);
+    }
+
+    public void addTasksToQueue(int numTasks) {
+        updateTotalTasks(numTasks);
+        // ToDo Add the tasks to the clq
     }
 
     public ConcurrentLinkedQueue<Event> getTaskQueue() {

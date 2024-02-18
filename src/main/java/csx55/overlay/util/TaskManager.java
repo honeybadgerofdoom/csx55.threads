@@ -12,28 +12,47 @@ public class TaskManager {
     private boolean needsMoreTasks = false;
     private boolean averageUpdated = false;
     private boolean balanced = false;
+    private ThreadPool threadPool;
 
-    public TaskManager(Random rng) {
+    public TaskManager(Random rng, ThreadPool threadPool) {
+        this.threadPool = threadPool;
         int randomNumberOfTasks = rng.nextInt(1001);
         this.currentNumberOfTasks = randomNumberOfTasks;
         this.initialNumberOfTasks = randomNumberOfTasks;
     }
 
+    // We started with a deficit. Go ahead & start the ones we have.
+    public void startInitialTasks() {
+        if (this.initialNumberOfTasks < average) {
+            System.out.println("Began with a deficit. Starting all " + this.initialNumberOfTasks + " we have.");
+            this.threadPool.addTasksToQueue(initialNumberOfTasks);
+        }
+    }
+
+    // We still need more tasks. Take what we can, start them.
     public synchronized void handleTaskDelivery(TaskDelivery taskDelivery) {
         if (this.needsMoreTasks) {
             int tasksNeeded = this.taskDiff;
             int tasksTaken = taskDelivery.takeTasks(tasksNeeded);
+            System.out.println("Received " + tasksTaken + " tasks from a TaskDelivery.");
+            this.threadPool.addTasksToQueue(tasksTaken);
             this.currentNumberOfTasks += tasksTaken;
             updateTaskDiff();
         }
     }
 
-    public synchronized void giveTasks(int tasksToGive) {
-        this.currentNumberOfTasks -= tasksToGive;
+    // This means we started with an excess. Update our current total, start that many of tasks.
+    public synchronized void giveTasks() {
+        this.currentNumberOfTasks -= this.taskDiff;
+        System.out.println("Start with a excess. Put " + this.taskDiff + " into a TaskDelivery message, starting " + this.currentNumberOfTasks + " tasks.");
+        this.threadPool.addTasksToQueue(this.currentNumberOfTasks);
         updateTaskDiff();
     }
 
+    // We gave tasks but there are some left. Start those.
     public synchronized void absorbExcessTasks(int excessTasks) {
+        System.out.println("Received " + excessTasks + " excess tasks from a TaskDelivery message. Starting them.");
+        this.threadPool.addTasksToQueue(excessTasks);
         this.currentNumberOfTasks += excessTasks;
         updateTaskDiff();
         this.balanced = true;
@@ -44,15 +63,13 @@ public class TaskManager {
         this.taskDiff = Math.abs(flooredAverage - this.currentNumberOfTasks);
         if (flooredAverage - 1 > this.currentNumberOfTasks) {
             this.needsMoreTasks = true;
-//            System.out.println("-" + this.taskDiff + " task deficit");
         }
         else {
             this.needsMoreTasks = false;
-//            System.out.println("+" + this.taskDiff + " task excess");
         }
     }
 
-    public int getCurrentNumberOfTasks() {
+    public synchronized int getCurrentNumberOfTasks() {
         return currentNumberOfTasks;
     }
 
@@ -70,7 +87,7 @@ public class TaskManager {
         return !this.needsMoreTasks;
     }
 
-    public int getTaskDiff() {
+    public synchronized int getTaskDiff() {
         return this.taskDiff;
     }
 
