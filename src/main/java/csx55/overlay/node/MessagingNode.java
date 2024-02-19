@@ -191,6 +191,9 @@ public class MessagingNode implements Node {
                 case (Protocol.TASK_REPORT_REQUEST):
                     handleTaskReport(event);
                     break;
+                case (Protocol.AVERAGES_CALCULATED):
+                    handleAveragesCalculated(event);
+                    break;
                 default:
                     System.out.println("onEvent couldn't handle event type " + type);
             }
@@ -315,6 +318,11 @@ public class MessagingNode implements Node {
 //        } catch (IOException e) {
 //            System.out.println("Failed to send TaskReportResponse " + e);
 //        }
+    }
+
+    private void handleAveragesCalculated(Event event) {
+        AveragesCalculated averagesCalculated = (AveragesCalculated) event;
+        this.taskProcessor.handleAveragesCalculated(averagesCalculated);
     }
 
     private void sendMessages(int numberOfRounds) {

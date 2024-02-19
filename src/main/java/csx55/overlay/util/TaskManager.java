@@ -24,7 +24,7 @@ public class TaskManager {
     // We started with a deficit. Go ahead & start the ones we have.
     public void startInitialTasks() {
         if (this.initialNumberOfTasks < average) {
-            System.out.println("Began with a deficit. Starting all " + this.initialNumberOfTasks + " we have.");
+//            System.out.println("Began with a deficit. Starting all " + this.initialNumberOfTasks + " we have.");
             this.threadPool.addTasksToQueue(initialNumberOfTasks);
         }
     }
@@ -34,7 +34,7 @@ public class TaskManager {
         if (this.needsMoreTasks) {
             int tasksNeeded = this.taskDiff;
             int tasksTaken = taskDelivery.takeTasks(tasksNeeded);
-            System.out.println("Received " + tasksTaken + " tasks from a TaskDelivery.");
+//            System.out.println("Received " + tasksTaken + " tasks from a TaskDelivery.");
             this.threadPool.addTasksToQueue(tasksTaken);
             this.currentNumberOfTasks += tasksTaken;
             updateTaskDiff();
@@ -44,14 +44,14 @@ public class TaskManager {
     // This means we started with an excess. Update our current total, start that many of tasks.
     public synchronized void giveTasks() {
         this.currentNumberOfTasks -= this.taskDiff;
-        System.out.println("Start with a excess. Put " + this.taskDiff + " into a TaskDelivery message, starting " + this.currentNumberOfTasks + " tasks.");
+//        System.out.println("Start with a excess. Put " + this.taskDiff + " into a TaskDelivery message, starting " + this.currentNumberOfTasks + " tasks.");
         this.threadPool.addTasksToQueue(this.currentNumberOfTasks);
         updateTaskDiff();
     }
 
     // We gave tasks but there are some left. Start those.
     public synchronized void absorbExcessTasks(int excessTasks) {
-        System.out.println("Received " + excessTasks + " excess tasks from a TaskDelivery message. Starting them.");
+//        System.out.println("Received " + excessTasks + " excess tasks from a TaskDelivery message. Starting them.");
         this.threadPool.addTasksToQueue(excessTasks);
         this.currentNumberOfTasks += excessTasks;
         updateTaskDiff();
@@ -73,7 +73,7 @@ public class TaskManager {
         return currentNumberOfTasks;
     }
 
-    public void setAverage(double average) {
+    public synchronized void setAverage(double average) {
         this.average = average;
         updateTaskDiff();
         averageUpdated = true;

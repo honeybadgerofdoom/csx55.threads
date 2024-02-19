@@ -3,21 +3,35 @@ package csx55.overlay.transport;
 import csx55.overlay.node.MessagingNode;
 import csx55.overlay.node.PartnerNodeRef;
 import csx55.overlay.util.TaskManager;
+import csx55.overlay.wireformats.AveragesCalculated;
 import csx55.overlay.wireformats.Event;
 import csx55.overlay.wireformats.TaskAverage;
 import csx55.overlay.wireformats.TaskDelivery;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.ArrayList;
+
+/*
+* FIXME
+*  - If the same node happens to always absorb the excess tasks, it might get way too many...
+*  - I'm seeing that often times one node has ~20% too many and the rest are nicely balanced
+* */
 
 public class TaskProcessor implements Runnable {
 
     private MessagingNode node;
     private final int numberOfRounds;
     private List<TaskManager> taskManagerList;
+    private boolean allAveragesCalculated = false;
+    private Deque<AveragesCalculated> averagesCalculatedDeque;
+    private boolean myAveragesAreAllCalculated = false;
 
     public TaskProcessor(MessagingNode node, int numberOfRounds) {
         this.node = node;
         this.numberOfRounds = numberOfRounds;
+        this.averagesCalculatedDeque = new ArrayDeque<>();
     }
 
     public void run() {
@@ -43,14 +57,20 @@ public class TaskProcessor implements Runnable {
         }
         System.out.println("Total average: " + totalAvg);
 
-        // FIXME We probably need to confirm that ALL nodes have calculated their average before continuing!
-
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+        // Wait until all nodes have calculated all their averages
+        this.myAveragesAreAllCalculated = true;
+        while (!this.averagesCalculatedDeque.isEmpty()) {
+            AveragesCalculated averagesCalculated = this.averagesCalculatedDeque.poll();
+            handleAveragesCalculated(averagesCalculated);
         }
+        AveragesCalculated averagesCalculated = new AveragesCalculated(this.node.getId());
+        partnerNodeRef.writeToSocket(averagesCalculated);
+
+        while (!this.allAveragesCalculated) {
+            Thread.onSpinWait();
+        }
+
+        // Load balancing
         
         for (int i = 0; i < this.numberOfRounds; i++) {
             balanceLoad(partnerNodeRef, i);
@@ -83,11 +103,9 @@ public class TaskProcessor implements Runnable {
         int iteration = taskAverage.getIteration();
         TaskManager taskManager = this.taskManagerList.get(iteration);
         if (taskAverage.nodeIsFirst(this.node.getId())) {
-            double average = (double) taskAverage.getSum() / taskAverage.getNumberOfNodes();
-            synchronized (taskManager) {
-                taskManager.setAverage(average);
-            }
-        } 
+            double average = taskAverage.getSum() / taskAverage.getNumberOfNodes();
+            taskManager.setAverage(average);
+        }
         else {
             relayTaskAverage(taskManager, taskAverage);
         }
@@ -111,6 +129,19 @@ public class TaskProcessor implements Runnable {
             if (taskDelivery.getNumTasks() > 0) relayTaskDelivery(taskDelivery);
         }
 
+    }
+
+    public void handleAveragesCalculated(AveragesCalculated averagesCalculated) {
+        if (averagesCalculated.nodeIsFirst(this.node.getId())) {
+            this.allAveragesCalculated = true;
+        }
+        else if (myAveragesAreAllCalculated) {
+            String lastNode = averagesCalculated.processRelay(this.node.getId());
+            relay(lastNode, averagesCalculated);
+        }
+        else {
+            this.averagesCalculatedDeque.add(averagesCalculated);
+        }
     }
 
     private void relayTaskAverage(TaskManager taskManager, TaskAverage taskAverage) {
