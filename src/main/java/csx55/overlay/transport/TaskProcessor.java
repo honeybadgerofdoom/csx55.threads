@@ -35,7 +35,9 @@ public class TaskProcessor implements Runnable {
 
         int totalAvg = 0;
         for (TaskManager taskManager : this.taskManagerList) {
-            while (!taskManager.averageIsSet()) {}
+            while (!taskManager.averageIsSet()) {
+                Thread.onSpinWait();
+            }
             taskManager.startInitialTasks();
             totalAvg += taskManager.getAverage();
         }
