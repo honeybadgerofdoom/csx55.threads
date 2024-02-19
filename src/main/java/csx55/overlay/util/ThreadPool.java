@@ -1,41 +1,60 @@
 package csx55.overlay.util;
 
-import csx55.overlay.wireformats.Event;
+import csx55.overlay.hashing.Task;
+import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ThreadPool {
 
-    private ConcurrentLinkedQueue<Event> taskQueue;
-    private int totalTasks = 0;
+    private ConcurrentLinkedQueue<Task> taskQueue;
+    private Integer totalTasksReceived = 0;
+    private String ipAddress;
+    private int portNumber;
+    private Random rng;
+    private Integer tasksCompleted = 0;
 
-    public ThreadPool() {
+    public ThreadPool(String ipAddress, int portNumber, Random rng) {
+        this.ipAddress = ipAddress;
+        this.portNumber = portNumber;
+        this.rng = rng;
     }
 
     public void startThreadPool(int numberOfThreads) {
         System.out.println("Starting thread pool with " + numberOfThreads + " threads.");
         this.taskQueue = new ConcurrentLinkedQueue<>();
         int numberOfWorkers = numberOfThreads;
-        /*
-        * TODO
-        *  - Make the class that actually does the work, pass it to the ctor of new Thread();
-        * */
         for (int i = 0; i < numberOfWorkers; i++) {
-            Thread thread = new Thread();
+            TaskWorker taskWorker = new TaskWorker(this);
+            Thread thread = new Thread(taskWorker);
             thread.start();
         }
     }
 
-    private synchronized void updateTotalTasks(int numTasks) {
-        this.totalTasks += numTasks;
-        System.out.println("Starting " + numTasks + " tasks. Current total is " + this.totalTasks);
+    public void incrementTasksCompleted() {
+        synchronized (tasksCompleted) {
+            this.tasksCompleted++;
+        }
     }
 
-    public void addTasksToQueue(int numTasks) {
-        updateTotalTasks(numTasks);
-        // ToDo Add the tasks to the clq
+    public int getTasksCompleted() {
+        return this.tasksCompleted;
     }
 
-    public ConcurrentLinkedQueue<Event> getTaskQueue() {
+    private void updateTotalTasksReceived(int numTasks) {
+        synchronized (totalTasksReceived) {
+            this.totalTasksReceived += numTasks;
+        }
+    }
+
+    public void addTasksToQueue(int numTasks, int round) {
+        updateTotalTasksReceived(numTasks);
+        for (int i = 0; i < numTasks; i++) {
+            Task task = new Task(this.ipAddress, this.portNumber, round, rng.nextInt());
+            this.taskQueue.add(task);
+        }
+    }
+
+    public ConcurrentLinkedQueue<Task> getTaskQueue() {
         return taskQueue;
     }
 

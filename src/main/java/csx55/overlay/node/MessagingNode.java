@@ -48,8 +48,12 @@ public class MessagingNode implements Node {
         startTCPServerThread();
         connectToRegistry(this.registryIpAddress, this.registryPortNumber);
         registerSelf();
-        this.threadPool = new ThreadPool();
+        setupThreadPool();
         manageCLI();
+    }
+
+    private void setupThreadPool() {
+        this.threadPool = new ThreadPool(this.ipAddress, this.portNumber, this.rng);
     }
 
     private void initializeTrafficStats() {

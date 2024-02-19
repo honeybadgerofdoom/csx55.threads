@@ -39,7 +39,7 @@ public class TaskProcessor implements Runnable {
         this.taskManagerList = new ArrayList<>();
 
         for (int i = 0; i < this.numberOfRounds; i++) {
-            TaskManager taskManager = new TaskManager(this.node.getRng(), this.node.getThreadPool());
+            TaskManager taskManager = new TaskManager(this.node.getRng(), this.node.getThreadPool(), i);
             this.taskManagerList.add(taskManager);
         }
         
