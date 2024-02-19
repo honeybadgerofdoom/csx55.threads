@@ -1,9 +1,6 @@
 package csx55.overlay.util;
 
-import csx55.overlay.hashing.Miner;
 import csx55.overlay.hashing.Task;
-import csx55.overlay.wireformats.Event;
-
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -51,9 +48,10 @@ public class ThreadPool {
 
     public void addTasksToQueue(int numTasks, int round) {
         updateTotalTasksReceived(numTasks);
-        // FIXME What is the payload??
-        Task task = new Task(this.ipAddress, this.portNumber, round, rng.nextInt());
-        this.taskQueue.add(task);
+        for (int i = 0; i < numTasks; i++) {
+            Task task = new Task(this.ipAddress, this.portNumber, round, rng.nextInt());
+            this.taskQueue.add(task);
+        }
     }
 
     public ConcurrentLinkedQueue<Task> getTaskQueue() {

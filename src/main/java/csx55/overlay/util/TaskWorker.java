@@ -16,15 +16,21 @@ public class TaskWorker implements Runnable {
     public void run() {
         Miner miner = new Miner();
         ConcurrentLinkedQueue<Task> taskQueue = threadPool.getTaskQueue();
-        while (true) {
+
+        // This assumes that the taskQueue never empties until it's done. Each task takes a while, so this should work.
+        while (taskQueue.isEmpty()) {
+            Thread.onSpinWait();
+        }
+        while (!taskQueue.isEmpty()) {
             Task task = taskQueue.poll();
-            if (task == null) continue;
+            if (task == null) break;
             miner.mine(task);
             this.threadPool.incrementTasksCompleted();
             if (this.threadPool.getTasksCompleted() % 10 == 0) {
                 System.out.println(this.threadPool.getTasksCompleted() + " tasks completed");
             }
         }
+        System.out.println("Completed " + this.threadPool.getTasksCompleted() + " tasks.");
     }
 
 }
