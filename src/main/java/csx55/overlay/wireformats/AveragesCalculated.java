@@ -4,29 +4,24 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.*;
 
-public class TaskAverage implements Event {
+public class AveragesCalculated implements Event {
 
-    private int messageType = Protocol.TASK_AVERAGE;
-    private int sum;
+    private int messageType = Protocol.AVERAGES_CALCULATED;
     private int numberOfNodes;
     private List<String> nodeIds;
-    private int iteration;
 
-    public TaskAverage(int numberOfTasks, String id, int iteration) {
-        this.sum = numberOfTasks;
+    public AveragesCalculated(String id) {
         this.numberOfNodes = 1;
         this.nodeIds = new ArrayList<>();
         this.nodeIds.add(id);
-        this.iteration = iteration;
     }
 
-    public TaskAverage(byte[] bytes) throws IOException {
+    public AveragesCalculated(byte[] bytes) throws IOException {
         ByteArrayInputStream bArrayInputStream = new ByteArrayInputStream(bytes);
         DataInputStream din = new DataInputStream(new BufferedInputStream(bArrayInputStream));
 
         din.readInt(); // take messageType out of stream
 
-        this.sum = din.readInt();
         this.numberOfNodes = din.readInt();
 
         this.nodeIds = new ArrayList<>();
@@ -37,8 +32,6 @@ public class TaskAverage implements Event {
             this.nodeIds.add(new String(currentInfoBytes));
         }
 
-        this.iteration = din.readInt();
-
         bArrayInputStream.close();
         din.close();
     }
@@ -47,9 +40,8 @@ public class TaskAverage implements Event {
         return this.messageType;
     }
 
-    public String processRelay(String id, int numberOfTasks) {
+    public String processRelay(String id) {
         String lastNode = this.nodeIds.get(this.numberOfNodes - 1);
-        this.sum += numberOfTasks;
         this.nodeIds.add(id);
         this.numberOfNodes++;
         return lastNode;
@@ -59,25 +51,12 @@ public class TaskAverage implements Event {
         return id.equals(this.nodeIds.get(0));
     }
 
-    public int getNumberOfNodes() {
-        return this.numberOfNodes;
-    }
-
-    public double getSum() {
-        return this.sum;
-    }
-
-    public int getIteration() {
-        return this.iteration;
-    }
-
     public byte[] getBytes() throws IOException {
         byte[] marshalledBytes = null;
         ByteArrayOutputStream baOutputStream = new ByteArrayOutputStream();
         DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
 
         dout.writeInt(this.messageType);
-        dout.writeInt(this.sum);
         dout.writeInt(this.numberOfNodes);
 
         for (String id : this.nodeIds) {
@@ -86,8 +65,6 @@ public class TaskAverage implements Event {
             dout.writeInt(elementLength);
             dout.write(idBytes);
         }
-
-        dout.writeInt(this.iteration);
 
         dout.flush();
         marshalledBytes = baOutputStream.toByteArray();

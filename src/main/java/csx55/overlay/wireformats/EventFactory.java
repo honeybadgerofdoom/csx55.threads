@@ -52,6 +52,8 @@ public class EventFactory {
                 return new TaskReportRequest(bytes);
             case (Protocol.TASK_REPORT_RESPONSE):
                 return new TaskReportResponse(bytes);
+            case (Protocol.AVERAGES_CALCULATED):
+                return new AveragesCalculated(bytes);
             default:
                 System.out.println("getEvent() found no matching route, messageType: " + messageType);
                 return null;
