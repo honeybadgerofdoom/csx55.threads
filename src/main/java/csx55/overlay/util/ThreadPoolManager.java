@@ -38,7 +38,6 @@ public class ThreadPoolManager implements Runnable {
         }
 
         // Wait for threads to finish
-        System.out.println("All worker threads started, waiting for workers to finish.");
         for (Thread thread : threads) {
             try {
                 thread.join();
@@ -48,9 +47,7 @@ public class ThreadPoolManager implements Runnable {
         }
 
         // Send TaskSummaryResponse
-        System.out.println("Workers finished, sending TaskSummaryResponse");
         TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(ipAddress, portNumber, this.trafficStats.getGenerated(), this.trafficStats.getPushed(), this.trafficStats.getPulled(), this.trafficStats.getCompleted());
-        System.out.println(taskSummaryResponse.formatTable());
         try {
             TCPSender sender = new TCPSender(socketToRegistry);
             byte[] bytes = taskSummaryResponse.getBytes();

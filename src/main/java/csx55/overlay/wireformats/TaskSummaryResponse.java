@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.BufferedInputStream;
+import java.text.DecimalFormat;
 
 public class TaskSummaryResponse implements Event {
 
@@ -17,7 +18,7 @@ public class TaskSummaryResponse implements Event {
     private final int portNumber;
     private int generated, pushed, pulled, completed;
     private TableHelper tableHelper = new TableHelper(12, 4);
-
+    private final DecimalFormat df = new DecimalFormat("#.######");
 
     public TaskSummaryResponse(String ipAddress, int portNumber, int generated, int pushed, int pulled, int completed) {
         this.ipAddress = ipAddress;
@@ -59,8 +60,9 @@ public class TaskSummaryResponse implements Event {
         return String.format("| %10d | %10d | %10d | %10d |", generated, pushed, pulled, completed);
     }
 
-    public String formatRow(String id) {
-        return String.format("| %-17s | %17d | %17d | %17d | %17d |", id, generated, pushed, pulled, completed);
+    public String formatRow(String id, double percentCompleted) {
+        double formatted = Double.parseDouble(df.format(percentCompleted));
+        return String.format("| %-17s | %17d | %17d | %17d | %17d | %17f |", id, generated, pushed, pulled, completed, formatted);
     }
 
     public byte[] getBytes() throws IOException {

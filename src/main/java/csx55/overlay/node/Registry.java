@@ -210,28 +210,39 @@ public class Registry implements Node {
             tableLine += horizontalTablePiece + tableCorner;
         }
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17s | %17s | %17s | %17s |", "Node", "Generated", "Pushed", "Pulled", "Completed"));
+        System.out.println(String.format("| %-17s | %17s | %17s | %17s | %17s | %17s |", "Node", "Generated", "Pushed", "Pulled", "Completed", "% of Tasks"));
         System.out.println(tableLine);
+
+        for (String key : this.taskResponseMap.keySet()) {
+            TaskSummaryResponse response = this.taskResponseMap.get(key);
+            int completed = response.getCompleted();
+            totalCompleted += completed;
+        }
+
+        double totalPercent = 0.0;
+
         for (String key : this.taskResponseMap.keySet()) {
             TaskSummaryResponse response = this.taskResponseMap.get(key);
             String ipAddress = response.getIpAddress();
             int portNumber = response.getPortNumber();
             int generated = response.getGenerated();
-            long pushed = response.getPushed();
+            int pushed = response.getPushed();
             int pulled = response.getPulled();
-            long completed = response.getCompleted();
+            int completed = response.getCompleted();
 
-            String id = ipAddress + ":" + portNumber;
+            String id = ipAddress + ":" + portNumber; // FIXME This should just be a member in the message `id` instead of ip & port
 
-            System.out.println(response.formatRow(id));
+            double percent = ((double) completed / totalCompleted) * 100;
+            totalPercent += percent;
+            System.out.println(response.formatRow(id, percent));
 
             totalGenerated += generated;
             totalPushed += pushed;
             totalPulled += pulled;
-            totalCompleted += completed;
         }
+
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17d | %17d | %17d | %17d |", "TOTAL", totalGenerated, totalPushed, totalPulled, totalCompleted));
+        System.out.println(String.format("| %-17s | %17d | %17d | %17d | %17d | %17f |", "TOTAL", totalGenerated, totalPushed, totalPulled, totalCompleted, totalPercent));
         System.out.println(tableLine);
     }
 
