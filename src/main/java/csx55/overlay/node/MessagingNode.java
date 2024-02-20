@@ -29,7 +29,7 @@ public class MessagingNode implements Node {
 
     private TrafficStats trafficStats;
 
-    private ConcurrentHashMap<String, PartnerNodeRef> partnerNodes;
+    private ConcurrentHashMap<String, PartnerNodeRef> partnerNodes; // FIXME Just 1 partner?
     private Socket socketToRegistry;
     private Random rng;
     private ThreadPool threadPool;
@@ -53,7 +53,7 @@ public class MessagingNode implements Node {
     }
 
     private void setupThreadPool() {
-        this.threadPool = new ThreadPool(this.ipAddress, this.portNumber, this.rng);
+        this.threadPool = new ThreadPool(this);
     }
 
     private void initializeTrafficStats() {
@@ -280,22 +280,22 @@ public class MessagingNode implements Node {
     }
 
     private void handleTrafficSummary() {
-        TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(
-                this.ipAddress,
-                this.portNumber,
-                this.trafficStats.getSendTracker(),
-                this.trafficStats.getSendSummation(),
-                this.trafficStats.getReceiveTracker(),
-                this.trafficStats.getReceiveSummation(),
-                this.trafficStats.getRelayTracker());
-        try {
-            byte[] bytes = taskSummaryResponse.getBytes();
-            TCPSender sender = new TCPSender(this.socketToRegistry);
-            sender.sendData(bytes);
-            this.trafficStats.reset();
-        } catch (IOException e) {
-            System.out.println("Failed to send TaskSummaryResponse " + e);
-        }
+//        TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(
+//                this.ipAddress,
+//                this.portNumber,
+//                this.trafficStats.getSendTracker(),
+//                this.trafficStats.getSendSummation(),
+//                this.trafficStats.getReceiveTracker(),
+//                this.trafficStats.getReceiveSummation(),
+//                this.trafficStats.getRelayTracker());
+//        try {
+//            byte[] bytes = taskSummaryResponse.getBytes();
+//            TCPSender sender = new TCPSender(this.socketToRegistry);
+//            sender.sendData(bytes);
+//            this.trafficStats.reset();
+//        } catch (IOException e) {
+//            System.out.println("Failed to send TaskSummaryResponse " + e);
+//        }
     }
 
     private void handlePoke(Event event) {

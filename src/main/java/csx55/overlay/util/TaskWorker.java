@@ -7,9 +7,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class TaskWorker implements Runnable {
 
     private final ThreadPool threadPool;
+    private final TrafficStats trafficStats;
 
-    public TaskWorker(ThreadPool threadPool) {
+    public TaskWorker(ThreadPool threadPool, TrafficStats trafficStats) {
         this.threadPool = threadPool;
+        this.trafficStats = trafficStats;
     }
 
     @Override
@@ -25,12 +27,13 @@ public class TaskWorker implements Runnable {
             Task task = taskQueue.poll();
             if (task == null) break;
             miner.mine(task);
-            this.threadPool.incrementTasksCompleted();
-            if (this.threadPool.getTasksCompleted() % 10 == 0) {
-                System.out.println(this.threadPool.getTasksCompleted() + " tasks completed");
+            this.trafficStats.incrementCompleted();
+            if (this.trafficStats.getCompleted() % 10 == 0) {
+                System.out.println(this.trafficStats.table());
             }
         }
-        System.out.println("Completed " + this.threadPool.getTasksCompleted() + " tasks.");
+
+        System.out.println(this.trafficStats.table());
     }
 
 }

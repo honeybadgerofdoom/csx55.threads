@@ -1,6 +1,8 @@
 package csx55.overlay.util;
 
 import csx55.overlay.hashing.Task;
+import csx55.overlay.node.MessagingNode;
+
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -8,15 +10,10 @@ public class ThreadPool {
 
     private ConcurrentLinkedQueue<Task> taskQueue;
     private Integer totalTasksReceived = 0;
-    private String ipAddress;
-    private int portNumber;
-    private Random rng;
-    private Integer tasksCompleted = 0;
+    private final MessagingNode node;
 
-    public ThreadPool(String ipAddress, int portNumber, Random rng) {
-        this.ipAddress = ipAddress;
-        this.portNumber = portNumber;
-        this.rng = rng;
+    public ThreadPool(MessagingNode node) {
+        this.node = node;
     }
 
     public void startThreadPool(int numberOfThreads) {
@@ -24,32 +21,15 @@ public class ThreadPool {
         this.taskQueue = new ConcurrentLinkedQueue<>();
         int numberOfWorkers = numberOfThreads;
         for (int i = 0; i < numberOfWorkers; i++) {
-            TaskWorker taskWorker = new TaskWorker(this);
+            TaskWorker taskWorker = new TaskWorker(this, this.node.getTrafficStats());
             Thread thread = new Thread(taskWorker);
             thread.start();
         }
     }
 
-    public void incrementTasksCompleted() {
-        synchronized (tasksCompleted) {
-            this.tasksCompleted++;
-        }
-    }
-
-    public int getTasksCompleted() {
-        return this.tasksCompleted;
-    }
-
-    private void updateTotalTasksReceived(int numTasks) {
-        synchronized (totalTasksReceived) {
-            this.totalTasksReceived += numTasks;
-        }
-    }
-
     public void addTasksToQueue(int numTasks, int round) {
-        updateTotalTasksReceived(numTasks);
         for (int i = 0; i < numTasks; i++) {
-            Task task = new Task(this.ipAddress, this.portNumber, round, rng.nextInt());
+            Task task = new Task(this.node.getIpAddress(), this.node.getPortNumber(), round, this.node.getRng().nextInt());
             this.taskQueue.add(task);
         }
     }

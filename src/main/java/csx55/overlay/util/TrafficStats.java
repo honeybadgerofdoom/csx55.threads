@@ -1,67 +1,70 @@
 package csx55.overlay.util;
 
-import java.util.concurrent.locks.ReentrantLock;
-
 public class TrafficStats {
 
-    private int sendTracker, receiveTracker, relayTracker = 0;
-    private long sendSummation, receiveSummation = 0L;
-
-    private final ReentrantLock receiveLock = new ReentrantLock();
-    private final ReentrantLock relayLock = new ReentrantLock();
+    private Integer generated, pushed, pulled, completed = 0;
 
     public void reset() {
-        sendTracker = 0;
-        receiveTracker = 0;
-        relayTracker = 0;
-        sendSummation = 0L;
-        receiveSummation = 0L;
+        generated = 0;
+        pushed = 0;
+        pulled = 0;
+        completed = 0;
     }
 
-    public void updateSentMessages(long payload) {
-        this.sendTracker++;
-        this.sendSummation += payload;
-    }
-
-    public void updateReceivedMessages(long payload) {
-        try {
-            this.receiveLock.lock();
-            this.receiveTracker++;
-            this.receiveSummation += payload;
-        } catch (Exception ignored) {
-        } finally {
-            this.receiveLock.unlock();
+    public void updateGenerated(int numTasks) {
+        synchronized (generated) {
+            generated += numTasks;
         }
     }
 
-    public void incrementRelayTracker() {
-        try {
-            this.relayLock.lock();
-            this.relayTracker++;
-        } catch (Exception ignored) {
-        } finally {
-            this.relayLock.unlock();
+    public void updatePushed(int numTasks) {
+        synchronized (pushed) {
+            pushed += numTasks;
         }
     }
 
-    public int getSendTracker() {
-        return sendTracker;
+    public void absorb(int numTasks) {
+        synchronized (pushed) {
+            pushed -= numTasks;
+        }
     }
 
-    public int getReceiveTracker() {
-        return receiveTracker;
+    public void updatePulled(int numTasks) {
+        synchronized (pulled) {
+            pulled += numTasks;
+        }
     }
 
-    public int getRelayTracker() {
-        return relayTracker;
+    public void incrementCompleted() {
+        synchronized (completed) {
+            completed++;
+        }
     }
 
-    public long getSendSummation() {
-        return sendSummation;
+    public Integer getGenerated() {
+        return generated;
     }
 
-    public long getReceiveSummation() {
-        return receiveSummation;
+    public Integer getPushed() {
+        return pushed;
+    }
+
+    public Integer getPulled() {
+        return pulled;
+    }
+
+    public Integer getCompleted() {
+        return completed;
+    }
+
+    public String table() {
+        String header = String.format("| %17s | %17s | %17s | %17s |", "Generated", "Pushed", "Pulled", "Completed");
+        return header + "\n" + this;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("| %17d | %17d | %17d | %17d |", generated, pushed, pulled, completed);
     }
 
 }
