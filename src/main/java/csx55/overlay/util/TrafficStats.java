@@ -2,7 +2,15 @@ package csx55.overlay.util;
 
 public class TrafficStats {
 
-    private Integer generated, pushed, pulled, completed = 0;
+    private Integer generated, pushed, pulled, completed;
+    private TableHelper tableHelper = new TableHelper(12, 4);
+
+    public TrafficStats() {
+        generated = 0;
+        pushed = 0;
+        pulled = 0;
+        completed = 0;
+    }
 
     public void reset() {
         generated = 0;
@@ -12,6 +20,7 @@ public class TrafficStats {
     }
 
     public void updateGenerated(int numTasks) {
+        System.out.println("Generated: " + generated);
         synchronized (generated) {
             generated += numTasks;
         }
@@ -58,13 +67,13 @@ public class TrafficStats {
     }
 
     public String table() {
-        String header = String.format("| %17s | %17s | %17s | %17s |", "Generated", "Pushed", "Pulled", "Completed");
-        return header + "\n" + this;
+        String header = String.format("| %10s | %10s | %10s | %10s |", "Generated", "Pushed", "Pulled", "Completed");
+        return this.tableHelper.formatTable(header, this.toString());
     }
 
     @Override
     public String toString() {
-        return String.format("| %17d | %17d | %17d | %17d |", generated, pushed, pulled, completed);
+        return String.format("| %10d | %10d | %10d | %10d |", generated, pushed, pulled, completed);
     }
 
 }

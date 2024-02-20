@@ -2,6 +2,8 @@ package csx55.overlay.util;
 
 import csx55.overlay.hashing.Miner;
 import csx55.overlay.hashing.Task;
+import csx55.overlay.wireformats.TaskSummaryResponse;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskWorker implements Runnable {
@@ -28,12 +30,9 @@ public class TaskWorker implements Runnable {
             if (task == null) break;
             miner.mine(task);
             this.trafficStats.incrementCompleted();
-            if (this.trafficStats.getCompleted() % 10 == 0) {
-                System.out.println(this.trafficStats.table());
-            }
         }
 
-        System.out.println(this.trafficStats.table());
+//        System.out.println(this.trafficStats.table());
     }
 
 }

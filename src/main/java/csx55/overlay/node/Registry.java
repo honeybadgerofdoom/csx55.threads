@@ -194,11 +194,10 @@ public class Registry implements Node {
     }
 
     private void printFinalOutput() {
-        int totalSent = 0;
-        long totalSentSum = 0L;
-        int totalReceived = 0;
-        long totalReceiveSum = 0L;
-        int totalRelay = 0;
+        int totalGenerated = 0;
+        int totalPulled = 0;
+        int totalPushed = 0;
+        int totalCompleted = 0;
         String horizontalTablePiece = "";
         int numDashes = 19;
         for (int i = 0; i < numDashes; i++) {
@@ -211,30 +210,28 @@ public class Registry implements Node {
             tableLine += horizontalTablePiece + tableCorner;
         }
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17s | %17s | %17s | %17s | %17s |", "Node", "Messages Sent", "Messages Received", "Sum of Sent", "Sum of Received", "Messages Relayed"));
+        System.out.println(String.format("| %-17s | %17s | %17s | %17s | %17s |", "Node", "Generated", "Pushed", "Pulled", "Completed"));
         System.out.println(tableLine);
         for (String key : this.taskResponseMap.keySet()) {
             TaskSummaryResponse response = this.taskResponseMap.get(key);
             String ipAddress = response.getIpAddress();
             int portNumber = response.getPortNumber();
-            int messagesSent = response.getMessagesSent();
-            long sentSummation = response.getSentSummation();
-            int messagesReceived = response.getMessagesReceived();
-            long receivedSummation = response.getReceivedSummation();
-            int messagesRelayed = response.getMessagesRelayed();
+            int generated = response.getGenerated();
+            long pushed = response.getPushed();
+            int pulled = response.getPulled();
+            long completed = response.getCompleted();
 
             String id = ipAddress + ":" + portNumber;
 
             System.out.println(response.formatRow(id));
 
-            totalSent += messagesSent;
-            totalSentSum += sentSummation;
-            totalReceived += messagesReceived;
-            totalReceiveSum += receivedSummation;
-            totalRelay += messagesRelayed;
+            totalGenerated += generated;
+            totalPushed += pushed;
+            totalPulled += pulled;
+            totalCompleted += completed;
         }
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17d | %17d | %17d | %17d | %17d |", "TOTAL", totalSent, totalReceived, totalSentSum, totalReceiveSum, totalRelay));
+        System.out.println(String.format("| %-17s | %17d | %17d | %17d | %17d |", "TOTAL", totalGenerated, totalPushed, totalPulled, totalCompleted));
         System.out.println(tableLine);
     }
 
