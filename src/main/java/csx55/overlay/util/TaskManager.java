@@ -60,7 +60,7 @@ public class TaskManager {
         updateTaskDiff();
     }
 
-    private void updateTaskDiff() {
+    private synchronized void updateTaskDiff() {
         int flooredAverage = (int) Math.floor(this.average);
         this.taskDiff = Math.abs(flooredAverage - this.currentNumberOfTasks);
         if (flooredAverage - 1 > this.currentNumberOfTasks) {
@@ -71,7 +71,7 @@ public class TaskManager {
         }
     }
 
-    private void pushTasksToThreadPool(int numTasks) {
+    private synchronized void pushTasksToThreadPool(int numTasks) {
         this.threadPool.addTasksToQueue(numTasks, this.round);
     }
 
@@ -97,12 +97,8 @@ public class TaskManager {
         return this.taskDiff;
     }
 
-    public int getInitialNumberOfTasks() {
+    public synchronized int getInitialNumberOfTasks() {
         return this.initialNumberOfTasks;
-    }
-
-    public double getAverage() {
-        return this.average;
     }
 
     @Override

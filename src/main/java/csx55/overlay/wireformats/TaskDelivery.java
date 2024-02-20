@@ -70,10 +70,6 @@ public class TaskDelivery implements Event {
         return id.equals(this.nodeIds.get(0));
     }
 
-    public int getNumberOfNodes() {
-        return this.numberOfNodes;
-    }
-
     public int getNumTasks() {
         return this.numTasks;
     }

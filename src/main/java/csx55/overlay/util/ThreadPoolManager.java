@@ -47,11 +47,13 @@ public class ThreadPoolManager implements Runnable {
         }
 
         // Send TaskSummaryResponse
+        System.out.println("All tasks complete, sending TaskSummaryResponse to registry.");
         TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(ipAddress, portNumber, this.trafficStats.getGenerated(), this.trafficStats.getPushed(), this.trafficStats.getPulled(), this.trafficStats.getCompleted());
         try {
             TCPSender sender = new TCPSender(socketToRegistry);
             byte[] bytes = taskSummaryResponse.getBytes();
             sender.sendData(bytes);
+            this.trafficStats.reset();
         } catch (IOException e) {
             System.out.println("ERROR Sending traffic summary " + e);
         }

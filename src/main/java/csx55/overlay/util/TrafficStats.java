@@ -3,7 +3,7 @@ package csx55.overlay.util;
 public class TrafficStats {
 
     private Integer generated, pushed, pulled, completed;
-    private TableHelper tableHelper = new TableHelper(12, 4);
+    private final TableHelper tableHelper = new TableHelper(12, 4);
 
     public TrafficStats() {
         generated = 0;

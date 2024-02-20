@@ -279,6 +279,10 @@ public class MessagingNode implements Node {
         }
     }
 
+    public void printTaskManagerSum() {
+        this.taskProcessor.printTaskManagerStats();
+    }
+
     private void handleTrafficSummary() {
 //        TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(
 //                this.ipAddress,
