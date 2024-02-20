@@ -39,10 +39,17 @@ public class TaskProcessor implements Runnable {
         this.taskManagerList = new ArrayList<>();
 
         for (int i = 0; i < this.numberOfRounds; i++) {
-            TaskManager taskManager = new TaskManager(this.node.getRng(), this.node.getThreadPool(), i);
+            TaskManager taskManager = new TaskManager(this.node.getRng(), this.node.getThreadPool(), i, this.node.getTrafficStats());
             this.taskManagerList.add(taskManager);
         }
-        
+
+        // FIXME We need to wait until these are all instantiated. Find a better way that sleep()
+        try {
+            Thread.sleep(50);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
         for (int i = 0; i < this.numberOfRounds; i++) {
             getTaskAverage(partnerNodeRef, i);
         }
@@ -71,7 +78,6 @@ public class TaskProcessor implements Runnable {
         }
 
         // Load balancing
-        
         for (int i = 0; i < this.numberOfRounds; i++) {
             balanceLoad(partnerNodeRef, i);
         }

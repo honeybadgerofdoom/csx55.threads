@@ -194,11 +194,10 @@ public class Registry implements Node {
     }
 
     private void printFinalOutput() {
-        int totalSent = 0;
-        long totalSentSum = 0L;
-        int totalReceived = 0;
-        long totalReceiveSum = 0L;
-        int totalRelay = 0;
+        int totalGenerated = 0;
+        int totalPulled = 0;
+        int totalPushed = 0;
+        int totalCompleted = 0;
         String horizontalTablePiece = "";
         int numDashes = 19;
         for (int i = 0; i < numDashes; i++) {
@@ -211,30 +210,39 @@ public class Registry implements Node {
             tableLine += horizontalTablePiece + tableCorner;
         }
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17s | %17s | %17s | %17s | %17s |", "Node", "Messages Sent", "Messages Received", "Sum of Sent", "Sum of Received", "Messages Relayed"));
+        System.out.println(String.format("| %-17s | %17s | %17s | %17s | %17s | %17s |", "Node", "Generated", "Pushed", "Pulled", "Completed", "% of Tasks"));
         System.out.println(tableLine);
+
+        for (String key : this.taskResponseMap.keySet()) {
+            TaskSummaryResponse response = this.taskResponseMap.get(key);
+            int completed = response.getCompleted();
+            totalCompleted += completed;
+        }
+
+        double totalPercent = 0.0;
+
         for (String key : this.taskResponseMap.keySet()) {
             TaskSummaryResponse response = this.taskResponseMap.get(key);
             String ipAddress = response.getIpAddress();
             int portNumber = response.getPortNumber();
-            int messagesSent = response.getMessagesSent();
-            long sentSummation = response.getSentSummation();
-            int messagesReceived = response.getMessagesReceived();
-            long receivedSummation = response.getReceivedSummation();
-            int messagesRelayed = response.getMessagesRelayed();
+            int generated = response.getGenerated();
+            int pushed = response.getPushed();
+            int pulled = response.getPulled();
+            int completed = response.getCompleted();
 
-            String id = ipAddress + ":" + portNumber;
+            String id = ipAddress + ":" + portNumber; // FIXME This should just be a member in the message `id` instead of ip & port
 
-            System.out.println(response.formatRow(id));
+            double percent = ((double) completed / totalCompleted) * 100;
+            totalPercent += percent;
+            System.out.println(response.formatRow(id, percent));
 
-            totalSent += messagesSent;
-            totalSentSum += sentSummation;
-            totalReceived += messagesReceived;
-            totalReceiveSum += receivedSummation;
-            totalRelay += messagesRelayed;
+            totalGenerated += generated;
+            totalPushed += pushed;
+            totalPulled += pulled;
         }
+
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17d | %17d | %17d | %17d | %17d |", "TOTAL", totalSent, totalReceived, totalSentSum, totalReceiveSum, totalRelay));
+        System.out.println(String.format("| %-17s | %17d | %17d | %17d | %17d | %17f |", "TOTAL", totalGenerated, totalPushed, totalPulled, totalCompleted, totalPercent));
         System.out.println(tableLine);
     }
 

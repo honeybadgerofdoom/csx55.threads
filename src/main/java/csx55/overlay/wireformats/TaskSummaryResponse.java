@@ -1,5 +1,7 @@
 package csx55.overlay.wireformats;
 
+import csx55.overlay.util.TableHelper;
+
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -7,23 +9,24 @@ import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.BufferedInputStream;
+import java.text.DecimalFormat;
 
 public class TaskSummaryResponse implements Event {
 
     private final int messageType = Protocol.TRAFFIC_SUMMARY;
     private final String ipAddress;
-    private final int portNumber, messagesSent, messagesReceived, messagesRelayed;
-    private final long sentSummation, receivedSummation;
+    private final int portNumber;
+    private int generated, pushed, pulled, completed;
+    private TableHelper tableHelper = new TableHelper(12, 4);
+    private final DecimalFormat df = new DecimalFormat("#.######");
 
-
-    public TaskSummaryResponse(String ipAddress, int portNumber, int messagesSent, long sentSummation, int messagesReceived, long receivedSummation, int messagesRelayed) {
+    public TaskSummaryResponse(String ipAddress, int portNumber, int generated, int pushed, int pulled, int completed) {
         this.ipAddress = ipAddress;
         this.portNumber = portNumber;
-        this.messagesSent = messagesSent;
-        this.sentSummation = sentSummation;
-        this.messagesReceived = messagesReceived;
-        this.receivedSummation = receivedSummation;
-        this.messagesRelayed = messagesRelayed;
+        this.generated = generated;
+        this.pushed = pushed;
+        this.pulled = pulled;
+        this.completed = completed;
     }
 
     public TaskSummaryResponse(byte[] bytes) throws IOException {
@@ -38,18 +41,28 @@ public class TaskSummaryResponse implements Event {
         this.ipAddress = new String(ipAddressBytes);
         
         this.portNumber = din.readInt();
-        this.messagesSent = din.readInt();
-        this.sentSummation = din.readLong();
-        this.messagesReceived = din.readInt();
-        this.receivedSummation = din.readLong();
-        this.messagesRelayed = din.readInt();
+        this.generated = din.readInt();
+        this.pushed = din.readInt();
+        this.pulled = din.readInt();
+        this.completed = din.readInt();
 
         bArrayInputStream.close();
         din.close();
     }
 
-    public String formatRow(String id) {
-        return String.format("| %-17s | %17d | %17d | %17d | %17d | %17d |", id, messagesSent, messagesReceived, sentSummation, receivedSummation, messagesRelayed);
+    public String formatTable() {
+        String header = String.format("| %10s | %10s | %10s | %10s |", "Generated", "Pushed", "Pulled", "Completed");
+        return this.tableHelper.formatTable(header, this.toString());
+    }
+
+    @Override
+    public String toString() {
+        return String.format("| %10d | %10d | %10d | %10d |", generated, pushed, pulled, completed);
+    }
+
+    public String formatRow(String id, double percentCompleted) {
+        double formatted = Double.parseDouble(df.format(percentCompleted));
+        return String.format("| %-17s | %17d | %17d | %17d | %17d | %17f |", id, generated, pushed, pulled, completed, formatted);
     }
 
     public byte[] getBytes() throws IOException {
@@ -65,11 +78,10 @@ public class TaskSummaryResponse implements Event {
         dout.write(ipAddressBytes);
 
         dout.writeInt(this.portNumber);
-        dout.writeInt(this.messagesSent);
-        dout.writeLong(this.sentSummation);
-        dout.writeInt(this.messagesReceived);
-        dout.writeLong(this.receivedSummation);
-        dout.writeInt(this.messagesRelayed);
+        dout.writeInt(this.generated);
+        dout.writeInt(this.pushed);
+        dout.writeInt(this.pulled);
+        dout.writeInt(this.completed);
 
         dout.flush();
         marshalledBytes = baOutputStream.toByteArray();
@@ -90,24 +102,20 @@ public class TaskSummaryResponse implements Event {
         return this.portNumber;
     }
 
-    public int getMessagesSent() {
-        return this.messagesSent;
+    public int getGenerated() {
+        return generated;
     }
 
-    public long getSentSummation() {
-        return this.sentSummation;
+    public int getPushed() {
+        return pushed;
     }
 
-    public int getMessagesReceived() {
-        return this.messagesReceived;
+    public int getPulled() {
+        return pulled;
     }
 
-    public long getReceivedSummation() {
-        return this.receivedSummation;
-    }
-
-    public int getMessagesRelayed() {
-        return this.messagesRelayed;
+    public int getCompleted() {
+        return completed;
     }
 
 }
