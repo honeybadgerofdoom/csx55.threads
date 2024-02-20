@@ -11,7 +11,6 @@ public class TaskManager {
     private int taskDiff;
     private boolean needsMoreTasks = false;
     private boolean averageUpdated = false;
-    private boolean balanced = false;
     private ThreadPool threadPool;
     private int round;
     private TrafficStats trafficStats;
@@ -27,7 +26,7 @@ public class TaskManager {
     }
 
     // We started with a deficit. Go ahead & start the ones we have.
-    public void startInitialTasks() {
+    public synchronized void startInitialTasks() {
         if (this.initialNumberOfTasks < average) {
             pushTasksToThreadPool(initialNumberOfTasks);
         }
@@ -59,7 +58,6 @@ public class TaskManager {
         this.trafficStats.absorb(excessTasks);
         this.currentNumberOfTasks += excessTasks;
         updateTaskDiff();
-        this.balanced = true;
     }
 
     private void updateTaskDiff() {
@@ -101,10 +99,6 @@ public class TaskManager {
 
     public int getInitialNumberOfTasks() {
         return this.initialNumberOfTasks;
-    }
-
-    public boolean isBalanced() {
-        return this.balanced;
     }
 
     public double getAverage() {

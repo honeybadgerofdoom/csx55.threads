@@ -62,7 +62,7 @@ public class TaskProcessor implements Runnable {
             taskManager.startInitialTasks();
             totalAvg += taskManager.getAverage();
         }
-        System.out.println("Total average: " + totalAvg);
+//        System.out.println("Total average: " + totalAvg);
 
         // Wait until all nodes have calculated all their averages
         this.myAveragesAreAllCalculated = true;
@@ -81,8 +81,6 @@ public class TaskProcessor implements Runnable {
         for (int i = 0; i < this.numberOfRounds; i++) {
             balanceLoad(partnerNodeRef, i);
         }
-
-        System.out.println("TaskProcessor complete.");
 
     }
 

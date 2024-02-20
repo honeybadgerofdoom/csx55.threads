@@ -9,7 +9,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class ThreadPool {
 
     private ConcurrentLinkedQueue<Task> taskQueue;
-    private Integer totalTasksReceived = 0;
     private final MessagingNode node;
 
     public ThreadPool(MessagingNode node) {
@@ -22,12 +21,6 @@ public class ThreadPool {
         ThreadPoolManager threadPoolManager = new ThreadPoolManager(this.node.getTrafficStats(), this, numberOfThreads, this.node.getIpAddress(), this.node.getPortNumber(), this.node.getSocketToRegistry());
         Thread thread = new Thread(threadPoolManager);
         thread.start();
-//        for (int i = 0; i < numberOfThreads; i++) {
-//            TaskWorker taskWorker = new TaskWorker(this, this.node.getTrafficStats());
-//            Thread thread = new Thread(taskWorker);
-//            thread.start();
-//        }
-        // Wait for threads to finish, send TaskSummaryResponse
     }
 
     public void addTasksToQueue(int numTasks, int round) {
@@ -36,8 +29,6 @@ public class ThreadPool {
             this.taskQueue.add(task);
         }
     }
-
-
 
     public ConcurrentLinkedQueue<Task> getTaskQueue() {
         return taskQueue;

@@ -20,7 +20,6 @@ public class TrafficStats {
     }
 
     public void updateGenerated(int numTasks) {
-        System.out.println("Generated: " + generated);
         synchronized (generated) {
             generated += numTasks;
         }
