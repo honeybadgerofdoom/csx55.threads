@@ -56,7 +56,7 @@ public class TaskDelivery implements Event {
 
     public synchronized int takeTasks(int tasksToTake) {
         if (tasksToTake > this.numTasks) {
-            int tasksToGive =  this.numTasks;
+            int tasksToGive = this.numTasks;
             this.numTasks = 0;
             return tasksToGive;
         }
@@ -70,7 +70,7 @@ public class TaskDelivery implements Event {
         return id.equals(this.nodeIds.get(0));
     }
 
-    public int getNumTasks() {
+    public synchronized int getNumTasks() {
         return this.numTasks;
     }
 
