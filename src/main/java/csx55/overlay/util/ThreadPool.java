@@ -15,10 +15,10 @@ public class ThreadPool {
         this.node = node;
     }
 
-    public void startThreadPool(int numberOfThreads) {
-        System.out.println("Starting thread pool with " + numberOfThreads + " threads.");
+    public void startThreadPool() {
+        System.out.println("Starting thread pool with " + this.node.getNumberOfThreads() + " threads.");
         this.taskQueue = new ConcurrentLinkedQueue<>();
-        ThreadPoolManager threadPoolManager = new ThreadPoolManager(this.node.getTrafficStats(), this, numberOfThreads, this.node.getIpAddress(), this.node.getPortNumber(), this.node.getSocketToRegistry());
+        ThreadPoolManager threadPoolManager = new ThreadPoolManager(this.node.getTrafficStats(), this, this.node.getNumberOfThreads(), this.node.getIpAddress(), this.node.getPortNumber(), this.node.getSocketToRegistry());
         Thread thread = new Thread(threadPoolManager);
         thread.start();
     }

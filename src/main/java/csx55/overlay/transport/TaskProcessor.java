@@ -40,6 +40,7 @@ public class TaskProcessor implements Runnable {
     }
 
     public void run() {
+        System.out.println("Starting " + this.numberOfRounds + " rounds");
         PartnerNodeRef partnerNodeRef = this.node.getOneNeighbor();
         this.taskManagerList = new ArrayList<>();
 

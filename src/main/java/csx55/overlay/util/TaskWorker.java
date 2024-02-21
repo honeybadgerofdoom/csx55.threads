@@ -27,6 +27,7 @@ public class TaskWorker implements Runnable {
         }
         while (!taskQueue.isEmpty()) {
             Task task = taskQueue.poll();
+            if (task == null) continue;
             miner.mine(task);
             this.trafficStats.incrementCompleted();
         }
