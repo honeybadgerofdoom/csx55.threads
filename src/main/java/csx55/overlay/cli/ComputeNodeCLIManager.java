@@ -1,14 +1,14 @@
 package csx55.overlay.cli;
 
-import csx55.overlay.node.MessagingNode;
+import csx55.overlay.node.ComputeNode;
 
 import java.util.Scanner;
 
-public class MessagingNodeCLIManager implements Runnable, CLIManager {
+public class ComputeNodeCLIManager implements Runnable, CLIManager {
 
-    private MessagingNode node;
+    private ComputeNode node;
 
-    public MessagingNodeCLIManager(MessagingNode node) {
+    public ComputeNodeCLIManager(ComputeNode node) {
         this.node = node;
     }
 

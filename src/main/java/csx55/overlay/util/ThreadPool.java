@@ -1,22 +1,20 @@
 package csx55.overlay.util;
 
 import csx55.overlay.hashing.Task;
-import csx55.overlay.node.MessagingNode;
+import csx55.overlay.node.ComputeNode;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.wireformats.TaskReport;
 
 import java.io.IOException;
-import java.net.Socket;
-import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ThreadPool {
 
     private ConcurrentLinkedQueue<Task> taskQueue;
-    private final MessagingNode node;
+    private final ComputeNode node;
     private TCPSender sender;
 
-    public ThreadPool(MessagingNode node) {
+    public ThreadPool(ComputeNode node) {
         this.node = node;
         try {
             this.sender = new TCPSender(node.getSocketToRegistry());

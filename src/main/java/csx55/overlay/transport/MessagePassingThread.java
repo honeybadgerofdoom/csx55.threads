@@ -1,18 +1,15 @@
 package csx55.overlay.transport;
 
-import csx55.overlay.node.MessagingNode;
-import csx55.overlay.node.PartnerNodeRef;
-import csx55.overlay.util.TrafficStats;
-import csx55.overlay.wireformats.Message;
+import csx55.overlay.node.ComputeNode;
 
 import java.util.*;
 
 public class MessagePassingThread implements Runnable {
 
-    private final MessagingNode node;
+    private final ComputeNode node;
     private final int numberOfRounds;
 
-    public MessagePassingThread(MessagingNode node, int numberOfRounds) {
+    public MessagePassingThread(ComputeNode node, int numberOfRounds) {
         this.node = node;
         this.numberOfRounds = numberOfRounds;
     }
