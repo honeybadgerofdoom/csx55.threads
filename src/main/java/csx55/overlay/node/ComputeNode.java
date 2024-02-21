@@ -1,6 +1,6 @@
 package csx55.overlay.node;
 
-import csx55.overlay.cli.MessagingNodeCLIManager;
+import csx55.overlay.cli.ComputeNodeCLIManager;
 import csx55.overlay.transport.TaskProcessor;
 import csx55.overlay.util.EventAndSocket;
 import csx55.overlay.util.ThreadPool;
@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 
-public class MessagingNode implements Node {
+public class ComputeNode implements Node {
 
     private ServerSocket serverSocket;
 
@@ -36,7 +36,7 @@ public class MessagingNode implements Node {
     private TaskProcessor taskProcessor;
     private int numberOfThreads;
 
-    public MessagingNode(String registryIpAddress, int registryPortNumber) {
+    public ComputeNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
         this.registryPortNumber = registryPortNumber;
         this.partnerNodes = new ConcurrentHashMap<>();
@@ -106,7 +106,7 @@ public class MessagingNode implements Node {
     }
 
     public void manageCLI() {
-        MessagingNodeCLIManager cliManager = new MessagingNodeCLIManager(this);
+        ComputeNodeCLIManager cliManager = new ComputeNodeCLIManager(this);
         Thread thread = new Thread(cliManager);
         thread.start();
     }
@@ -372,7 +372,7 @@ public class MessagingNode implements Node {
         if (args.length == 2) {
             String registryIpAddress = args[0];
             int registryPortNumber = Integer.parseInt(args[1]);
-            MessagingNode node = new MessagingNode(registryIpAddress, registryPortNumber);
+            ComputeNode node = new ComputeNode(registryIpAddress, registryPortNumber);
             node.doWork();
         }
         else {

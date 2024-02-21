@@ -1,6 +1,6 @@
 package csx55.overlay.transport;
 
-import csx55.overlay.node.MessagingNode;
+import csx55.overlay.node.ComputeNode;
 import csx55.overlay.node.PartnerNodeRef;
 import csx55.overlay.util.TaskManager;
 import csx55.overlay.wireformats.AveragesCalculated;
@@ -26,14 +26,14 @@ import java.util.ArrayList;
 
 public class TaskProcessor implements Runnable {
 
-    private final MessagingNode node;
+    private final ComputeNode node;
     private final int numberOfRounds;
     private List<TaskManager> taskManagerList;
     private boolean allAveragesCalculated = false;
     private final Deque<AveragesCalculated> averagesCalculatedDeque;
     private boolean myAveragesAreAllCalculated = false;
 
-    public TaskProcessor(MessagingNode node, int numberOfRounds) {
+    public TaskProcessor(ComputeNode node, int numberOfRounds) {
         this.node = node;
         this.numberOfRounds = numberOfRounds;
         this.averagesCalculatedDeque = new ArrayDeque<>();

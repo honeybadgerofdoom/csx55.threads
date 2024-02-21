@@ -33,7 +33,8 @@ public class TaskWorker implements Runnable {
             if (task == null) continue;
             miner.mine(task);
             this.trafficStats.incrementCompleted();
-            this.threadPool.sendTaskDataToRegistry(task);
+            System.out.println(task);
+//            this.threadPool.sendTaskDataToRegistry(task);
         }
 
     }
