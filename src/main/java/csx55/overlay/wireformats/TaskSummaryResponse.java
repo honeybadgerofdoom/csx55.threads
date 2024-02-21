@@ -16,9 +16,9 @@ public class TaskSummaryResponse implements Event {
     private final int messageType = Protocol.TRAFFIC_SUMMARY;
     private final String ipAddress;
     private final int portNumber;
-    private int generated, pushed, pulled, completed;
-    private TableHelper tableHelper = new TableHelper(12, 4);
-    private final DecimalFormat df = new DecimalFormat("#.######");
+    private final int generated, pushed, pulled, completed;
+    private final TableHelper tableHelper = new TableHelper(12, 4);
+    private final DecimalFormat df = new DecimalFormat("#.##########");
 
     public TaskSummaryResponse(String ipAddress, int portNumber, int generated, int pushed, int pulled, int completed) {
         this.ipAddress = ipAddress;

@@ -40,6 +40,9 @@ public class MessagingNodeCLIManager implements Runnable, CLIManager {
                     System.out.println("ERROR you must provide a message (String) argument. " + e);
                 }
                 break;
+            case "task-manager-stats":
+                this.node.printTaskManagerSum();
+                break;
             default:
                 System.out.println("Invalid CLI Input: " + input);
         }

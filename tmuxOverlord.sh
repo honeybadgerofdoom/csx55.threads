@@ -1,7 +1,6 @@
 ##!/bin/sh
 
-#hosts=("tehran" "jakarta" "sunlight" "char" "pollock" "bogota" "cockroach" "earth" "hornet" "katydid")
-hosts=("tehran" "sunlight" "bogota" "hornet" "katydid")
+hosts=("tehran" "jakarta" "sunlight" "char" "pollock" "bogota" "cockroach" "earth" "hornet" "katydid")
 
 directory="CS555/csx55.threads"
 #start and detach from session

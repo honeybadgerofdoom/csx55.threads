@@ -34,6 +34,7 @@ public class MessagingNode implements Node {
     private Random rng;
     private ThreadPool threadPool;
     private TaskProcessor taskProcessor;
+    private int numberOfThreads;
 
     public MessagingNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
@@ -42,13 +43,11 @@ public class MessagingNode implements Node {
     }
 
     public void doWork() {
-        initializeTrafficStats();
         assignIpAddress();
         assignServerSocketAndPort();
         startTCPServerThread();
         connectToRegistry(this.registryIpAddress, this.registryPortNumber);
         registerSelf();
-        setupThreadPool();
         manageCLI();
     }
 
@@ -58,6 +57,10 @@ public class MessagingNode implements Node {
 
     private void initializeTrafficStats() {
         this.trafficStats = new TrafficStats();
+    }
+
+    public int getNumberOfThreads() {
+        return this.numberOfThreads;
     }
 
     private void assignIpAddress() {
@@ -153,14 +156,6 @@ public class MessagingNode implements Node {
         return this.id;
     }
 
-//    public void setTaskManager(TaskManager taskManager) {
-//        this.taskManager = taskManager;
-//    }
-//
-//    public TaskManager getTaskManager() {
-//        return this.taskManager;
-//    }
-
     public void onEvent(Event event, Socket socket) {
         if (event != null) {
             int type = event.getType();
@@ -223,7 +218,7 @@ public class MessagingNode implements Node {
     private void handleMessagingNodesList(Event event) {
         List<String> info = ((MessagingNodesList) event).getInfo();
         int numberOfThreads = ((MessagingNodesList) event).getNumberOfThreads();
-        this.threadPool.startThreadPool(numberOfThreads);
+        this.numberOfThreads = numberOfThreads;
         int numberOfConnections = 0;
         for (String nodeInfo : info) {
             String[] nodeInfoList = nodeInfo.split(":");
@@ -256,6 +251,9 @@ public class MessagingNode implements Node {
     }
 
     private void handleTaskInitiate(Event event) {
+        initializeTrafficStats();
+        setupThreadPool();
+        this.threadPool.startThreadPool();
         int numberOfRounds = ((TaskInitiate) event).getRounds();
         this.taskProcessor = new TaskProcessor(this, numberOfRounds);
         Thread thread = new Thread(this.taskProcessor);
@@ -277,6 +275,10 @@ public class MessagingNode implements Node {
         } catch (IOException e) {
             System.out.println("Failed to send TaskComplete message to Registry." + e);
         }
+    }
+
+    public void printTaskManagerSum() {
+        this.taskProcessor.printTaskManagerStats();
     }
 
     private void handleTrafficSummary() {

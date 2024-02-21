@@ -15,17 +15,22 @@ import java.util.ArrayList;
 
 /*
 * FIXME
-*  - If the same node happens to always absorb the excess tasks, it might get way too many...
-*  - I'm seeing that often times one node has ~20% too many and the rest are nicely balanced
+*  - Some nodes are have wrong # of completed tasks in the output table
+*  - When I do: (generated - pushed + pulled) the number is correct, but different than completed
+*  - Look @ when tasks are being added, bug might be there
+*  - generated, pushed, and pulled all look correct
+*       - When are we adding tasks to the taskQueue while not also updating generated, pushed, or pulled?
+*           -> startInitialTasks() & absorbExcessTasks()
+*  - !! When I sum currentNumberOfTasks for each TaskProcessor instance & print it, they're all correct
 * */
 
 public class TaskProcessor implements Runnable {
 
-    private MessagingNode node;
+    private final MessagingNode node;
     private final int numberOfRounds;
     private List<TaskManager> taskManagerList;
     private boolean allAveragesCalculated = false;
-    private Deque<AveragesCalculated> averagesCalculatedDeque;
+    private final Deque<AveragesCalculated> averagesCalculatedDeque;
     private boolean myAveragesAreAllCalculated = false;
 
     public TaskProcessor(MessagingNode node, int numberOfRounds) {
@@ -35,6 +40,7 @@ public class TaskProcessor implements Runnable {
     }
 
     public void run() {
+        System.out.println("Starting " + this.numberOfRounds + " rounds");
         PartnerNodeRef partnerNodeRef = this.node.getOneNeighbor();
         this.taskManagerList = new ArrayList<>();
 
@@ -43,7 +49,7 @@ public class TaskProcessor implements Runnable {
             this.taskManagerList.add(taskManager);
         }
 
-        // FIXME We need to wait until these are all instantiated. Find a better way that sleep()
+        // FIXME We need to wait until these are all instantiated. Find a better way that sleep() - just use a message like AveragesCalculated...
         try {
             Thread.sleep(50);
         } catch (InterruptedException e) {
@@ -54,15 +60,12 @@ public class TaskProcessor implements Runnable {
             getTaskAverage(partnerNodeRef, i);
         }
 
-        int totalAvg = 0;
         for (TaskManager taskManager : this.taskManagerList) {
             while (!taskManager.averageIsSet()) {
                 Thread.onSpinWait();
             }
             taskManager.startInitialTasks();
-            totalAvg += taskManager.getAverage();
         }
-        System.out.println("Total average: " + totalAvg);
 
         // Wait until all nodes have calculated all their averages
         this.myAveragesAreAllCalculated = true;
@@ -82,8 +85,6 @@ public class TaskProcessor implements Runnable {
             balanceLoad(partnerNodeRef, i);
         }
 
-        System.out.println("TaskProcessor complete.");
-
     }
 
     private void getTaskAverage(PartnerNodeRef partnerNodeRef, int iteration) {
@@ -97,6 +98,7 @@ public class TaskProcessor implements Runnable {
         // Get the correct TaskManager instance
         TaskManager taskManager = this.taskManagerList.get(iteration);
 
+        // If we have too many tasks, send them around the ring in a TaskDelivery message
         if (taskManager.shouldGiveTasks()) {
             TaskDelivery taskDelivery = new TaskDelivery(taskManager.getTaskDiff(), this.node.getId(), iteration);
             taskManager.giveTasks();
@@ -106,15 +108,22 @@ public class TaskProcessor implements Runnable {
     }
 
     public void handleTaskAverage(TaskAverage taskAverage) {
+
+        // Get correct TaskManager instance
         int iteration = taskAverage.getIteration();
         TaskManager taskManager = this.taskManagerList.get(iteration);
+
+        // We got our message back
         if (taskAverage.nodeIsFirst(this.node.getId())) {
             double average = taskAverage.getSum() / taskAverage.getNumberOfNodes();
             taskManager.setAverage(average);
         }
+
+        // Not our message, relay it
         else {
             relayTaskAverage(taskManager, taskAverage);
         }
+
     }
 
     public void handleTaskDelivery(TaskDelivery taskDelivery) {
@@ -166,6 +175,14 @@ public class TaskProcessor implements Runnable {
             PartnerNodeRef relayTarget = this.node.getPartnerNodes().get(key);
             relayTarget.writeToSocket(event);
         }
+    }
+
+    public void printTaskManagerStats() {
+        int sum = 0;
+        for (TaskManager taskManager : this.taskManagerList) {
+            sum += taskManager.getCurrentNumberOfTasks();
+        }
+        System.out.println("Total tasks: " + sum);
     }
 
 }

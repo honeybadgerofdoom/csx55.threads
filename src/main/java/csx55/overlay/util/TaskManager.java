@@ -11,10 +11,9 @@ public class TaskManager {
     private int taskDiff;
     private boolean needsMoreTasks = false;
     private boolean averageUpdated = false;
-    private boolean balanced = false;
-    private ThreadPool threadPool;
-    private int round;
-    private TrafficStats trafficStats;
+    private final ThreadPool threadPool;
+    private final int round;
+    private final TrafficStats trafficStats;
 
     public TaskManager(Random rng, ThreadPool threadPool, int round, TrafficStats trafficStats) {
         this.threadPool = threadPool;
@@ -26,21 +25,21 @@ public class TaskManager {
         this.trafficStats = trafficStats;
     }
 
-    // We started with a deficit. Go ahead & start the ones we have.
-    public void startInitialTasks() {
-        if (this.initialNumberOfTasks < average) {
-            pushTasksToThreadPool(initialNumberOfTasks);
+    public synchronized void startInitialTasks() {
+        int tasksToPush = this.initialNumberOfTasks;
+        if (tasksToPush > average) {
+            tasksToPush = (int) Math.floor(this.average);
         }
+        pushTasksToThreadPool(tasksToPush);
     }
 
     // We still need more tasks. Take what we can, start them.
     public synchronized void handleTaskDelivery(TaskDelivery taskDelivery) {
         if (this.needsMoreTasks) {
-            int tasksNeeded = this.taskDiff;
-            int tasksTaken = taskDelivery.takeTasks(tasksNeeded);
-            pushTasksToThreadPool(tasksTaken);
+            int tasksTaken = taskDelivery.takeTasks(this.taskDiff);
             this.trafficStats.updatePulled(tasksTaken);
             this.currentNumberOfTasks += tasksTaken;
+            pushTasksToThreadPool(tasksTaken);
             updateTaskDiff();
         }
     }
@@ -49,23 +48,21 @@ public class TaskManager {
     public synchronized void giveTasks() {
         this.currentNumberOfTasks -= this.taskDiff;
         this.trafficStats.updatePushed(this.taskDiff);
-        pushTasksToThreadPool(this.currentNumberOfTasks);
         updateTaskDiff();
     }
 
     // We gave tasks but there are some left. Start those.
     public synchronized void absorbExcessTasks(int excessTasks) {
-        pushTasksToThreadPool(excessTasks);
-        this.trafficStats.absorb(excessTasks);
         this.currentNumberOfTasks += excessTasks;
+        this.trafficStats.absorb(excessTasks);
+        pushTasksToThreadPool(excessTasks);
         updateTaskDiff();
-        this.balanced = true;
     }
 
-    private void updateTaskDiff() {
+    private synchronized void updateTaskDiff() {
         int flooredAverage = (int) Math.floor(this.average);
         this.taskDiff = Math.abs(flooredAverage - this.currentNumberOfTasks);
-        if (flooredAverage - 1 > this.currentNumberOfTasks) {
+        if (flooredAverage > this.currentNumberOfTasks) {
             this.needsMoreTasks = true;
         }
         else {
@@ -73,7 +70,7 @@ public class TaskManager {
         }
     }
 
-    private void pushTasksToThreadPool(int numTasks) {
+    private synchronized void pushTasksToThreadPool(int numTasks) {
         this.threadPool.addTasksToQueue(numTasks, this.round);
     }
 
@@ -99,16 +96,8 @@ public class TaskManager {
         return this.taskDiff;
     }
 
-    public int getInitialNumberOfTasks() {
+    public synchronized int getInitialNumberOfTasks() {
         return this.initialNumberOfTasks;
-    }
-
-    public boolean isBalanced() {
-        return this.balanced;
-    }
-
-    public double getAverage() {
-        return this.average;
     }
 
     @Override
