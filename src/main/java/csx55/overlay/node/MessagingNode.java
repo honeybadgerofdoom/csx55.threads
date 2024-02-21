@@ -187,9 +187,6 @@ public class MessagingNode implements Node {
                 case (Protocol.TASK_DELIVERY):
                     handleTaskDelivery(event);
                     break;
-                case (Protocol.TASK_REPORT_REQUEST):
-                    handleTaskReport(event);
-                    break;
                 case (Protocol.AVERAGES_CALCULATED):
                     handleAveragesCalculated(event);
                     break;
@@ -313,17 +310,6 @@ public class MessagingNode implements Node {
     private void handleTaskDelivery(Event event) {
         TaskDelivery taskDelivery = (TaskDelivery) event;
         this.taskProcessor.handleTaskDelivery(taskDelivery);
-    }
-
-    private void handleTaskReport(Event event) {
-//        TaskReportResponse taskReportResponse = new TaskReportResponse(this.id, this.taskManager.getCurrentNumberOfTasks(), this.taskManager.getInitialNumberOfTasks());
-//        try {
-//            TCPSender sender = new TCPSender(socketToRegistry);
-//            byte[] bytes = taskReportResponse.getBytes();
-//            sender.sendData(bytes);
-//        } catch (IOException e) {
-//            System.out.println("Failed to send TaskReportResponse " + e);
-//        }
     }
 
     private void handleAveragesCalculated(Event event) {

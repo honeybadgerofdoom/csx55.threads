@@ -2,8 +2,12 @@ package csx55.overlay.util;
 
 import csx55.overlay.hashing.Miner;
 import csx55.overlay.hashing.Task;
+import csx55.overlay.transport.TCPSender;
+import csx55.overlay.wireformats.TaskReport;
 import csx55.overlay.wireformats.TaskSummaryResponse;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskWorker implements Runnable {
@@ -21,7 +25,6 @@ public class TaskWorker implements Runnable {
         Miner miner = new Miner();
         ConcurrentLinkedQueue<Task> taskQueue = threadPool.getTaskQueue();
 
-        // This assumes that the taskQueue never empties until it's done. Each task takes a while, so this should work.
         while (taskQueue.isEmpty()) {
             Thread.onSpinWait();
         }
@@ -30,6 +33,7 @@ public class TaskWorker implements Runnable {
             if (task == null) continue;
             miner.mine(task);
             this.trafficStats.incrementCompleted();
+            this.threadPool.sendTaskDataToRegistry(task);
         }
 
     }
