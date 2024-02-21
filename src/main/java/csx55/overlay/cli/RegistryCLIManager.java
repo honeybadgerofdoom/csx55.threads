@@ -1,6 +1,6 @@
 package csx55.overlay.cli;
 
-import csx55.overlay.node.Registry;
+import csx55.overlay.Registry;
 
 import java.util.Scanner;
 

@@ -1,7 +1,7 @@
 package csx55.overlay.util;
 
 import csx55.overlay.hashing.Task;
-import csx55.overlay.node.ComputeNode;
+import csx55.overlay.ComputeNode;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.wireformats.TaskReport;
 

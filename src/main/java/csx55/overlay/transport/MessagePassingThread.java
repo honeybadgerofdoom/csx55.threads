@@ -1,6 +1,6 @@
 package csx55.overlay.transport;
 
-import csx55.overlay.node.ComputeNode;
+import csx55.overlay.ComputeNode;
 
 import java.util.*;
 

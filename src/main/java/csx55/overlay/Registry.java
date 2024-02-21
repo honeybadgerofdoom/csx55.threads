@@ -1,4 +1,4 @@
-package csx55.overlay.node;
+package csx55.overlay;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import csx55.overlay.cli.RegistryCLIManager;
+import csx55.overlay.node.Node;
 import csx55.overlay.transport.TCPSender;
 import csx55.overlay.util.EventAndSocket;
 import csx55.overlay.util.OverlayCreator;

@@ -1,6 +1,8 @@
-package csx55.overlay.node;
+package csx55.overlay;
 
 import csx55.overlay.cli.ComputeNodeCLIManager;
+import csx55.overlay.node.Node;
+import csx55.overlay.node.PartnerNodeRef;
 import csx55.overlay.transport.TaskProcessor;
 import csx55.overlay.util.EventAndSocket;
 import csx55.overlay.util.ThreadPool;
