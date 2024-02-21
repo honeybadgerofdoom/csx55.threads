@@ -8,32 +8,25 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.BufferedInputStream;
 
-public class TaskReportResponse implements Event {
+public class TaskReport implements Event {
 
-    private final int messageType = Protocol.TASK_REPORT_RESPONSE;
-    private String id;
-    private int numTasks;
-    private int initialNumberOfTasks;
+    private final int messageType = Protocol.TASK_REPORT;
+    private String data;
 
-    public TaskReportResponse(String id, int numTasks, int initialNumberOfTasks) {
-        this.id = id;
-        this.numTasks = numTasks;
-        this.initialNumberOfTasks = initialNumberOfTasks;
+    public TaskReport(String data) {
+        this.data = data;
     }
 
-    public TaskReportResponse(byte[] bytes) throws IOException {
+    public TaskReport(byte[] bytes) throws IOException {
         ByteArrayInputStream bArrayInputStream = new ByteArrayInputStream(bytes);
         DataInputStream din = new DataInputStream(new BufferedInputStream(bArrayInputStream));
 
         din.readInt(); // take messageType out of stream
 
-        int idLength = din.readInt();
-        byte[] idBytes = new byte[idLength];
-        din.readFully(idBytes);
-        this.id = new String(idBytes);
-
-        this.numTasks = din.readInt();
-        this.initialNumberOfTasks = din.readInt();
+        int dataLength = din.readInt();
+        byte[] dataBytes = new byte[dataLength];
+        din.readFully(dataBytes);
+        this.data = new String(dataBytes);
 
         bArrayInputStream.close();
         din.close();
@@ -50,13 +43,10 @@ public class TaskReportResponse implements Event {
 
         dout.writeInt(this.messageType);
 
-        byte[] ipAddressBytes = this.id.getBytes();
-        int elementLength = ipAddressBytes.length;
+        byte[] dataLength = this.data.getBytes();
+        int elementLength = dataLength.length;
         dout.writeInt(elementLength);
-        dout.write(ipAddressBytes);
-
-        dout.writeInt(this.numTasks);
-        dout.writeInt(this.initialNumberOfTasks);
+        dout.write(dataLength);
 
         dout.flush();
         marshalledBytes = baOutputStream.toByteArray();
@@ -65,9 +55,8 @@ public class TaskReportResponse implements Event {
         return marshalledBytes;
     }
 
-    @Override
-    public String toString() {
-        return "--------------------\n" + this.id + "\nBefore Load Balancing: " + this.initialNumberOfTasks + "\nAfter Load Balancing: " + this.numTasks + "\n--------------------";
+    public String getData() {
+        return this.data;
     }
 
 }

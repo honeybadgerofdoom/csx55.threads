@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import csx55.overlay.cli.RegistryCLIManager;
 import csx55.overlay.transport.TCPSender;
-import csx55.overlay.transport.TaskProcessor;
 import csx55.overlay.util.EventAndSocket;
 import csx55.overlay.util.OverlayCreator;
 import csx55.overlay.wireformats.*;
@@ -114,8 +113,8 @@ public class Registry implements Node {
             case (Protocol.TRAFFIC_SUMMARY):
                 handleTrafficSummary(event);
                 break;
-            case (Protocol.TASK_REPORT_RESPONSE):
-                handleTaskReportResponse(event);
+            case (Protocol.TASK_REPORT):
+                handleTaskReport(event);
                 break;
             default:
                 System.out.println("onEvent trying to process invalid evernt type: " + event.getType());
@@ -188,9 +187,9 @@ public class Registry implements Node {
         }
     }
 
-    private void handleTaskReportResponse(Event event) {
-        TaskReportResponse taskReportResponse = (TaskReportResponse) event;
-        System.out.println(taskReportResponse);
+    private void handleTaskReport(Event event) {
+        TaskReport taskReport = (TaskReport) event;
+        System.out.println(taskReport.getData());
     }
 
     private void printFinalOutput() {
@@ -311,11 +310,6 @@ public class Registry implements Node {
     public void initiateMessagePassing(int numberOfRounds) {
         TaskInitiate taskInitiateMessage = new TaskInitiate(numberOfRounds);
         sendToAllNodes(taskInitiateMessage);
-    }
-
-    public void taskReport() {
-        TaskReportRequest taskReportRequest = new TaskReportRequest();
-        sendToAllNodes(taskReportRequest);
     }
 
     private void sendToAllNodes(Event event) {

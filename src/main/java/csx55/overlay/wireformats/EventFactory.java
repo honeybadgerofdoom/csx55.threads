@@ -48,10 +48,8 @@ public class EventFactory {
                 return new TaskAverage(bytes);
             case (Protocol.TASK_DELIVERY):
                 return new TaskDelivery(bytes);
-            case (Protocol.TASK_REPORT_REQUEST):
-                return new TaskReportRequest(bytes);
-            case (Protocol.TASK_REPORT_RESPONSE):
-                return new TaskReportResponse(bytes);
+            case (Protocol.TASK_REPORT):
+                return new TaskReport(bytes);
             case (Protocol.AVERAGES_CALCULATED):
                 return new AveragesCalculated(bytes);
             default:
