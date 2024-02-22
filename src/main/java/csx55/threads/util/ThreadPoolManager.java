@@ -4,7 +4,9 @@ import csx55.threads.transport.TCPSender;
 import csx55.threads.wireformats.TaskSummaryResponse;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +18,7 @@ public class ThreadPoolManager implements Runnable {
     private final String ipAddress;
     private final int portNumber;
     private final Socket socketToRegistry;
+    private String ipNumeric;
 
     public ThreadPoolManager(TrafficStats trafficStats, ThreadPool threadPool, int numberOfThreads, String ipAddress, int portNumber, Socket socketToRegistry) {
         this.trafficStats = trafficStats;
@@ -24,6 +27,12 @@ public class ThreadPoolManager implements Runnable {
         this.ipAddress = ipAddress;
         this.portNumber = portNumber;
         this.socketToRegistry = socketToRegistry;
+        try {
+            InetAddress addr = InetAddress.getLocalHost();
+            this.ipNumeric = addr.getHostAddress();
+        } catch (UnknownHostException e) {
+            System.out.println("Failed to get host " + e);
+        }
     }
 
     @Override
@@ -48,7 +57,7 @@ public class ThreadPoolManager implements Runnable {
 
         // Send TaskSummaryResponse
         System.out.println("All tasks complete, sending TaskSummaryResponse to registry.");
-        TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(ipAddress, portNumber, this.trafficStats.getGenerated(), this.trafficStats.getPushed(), this.trafficStats.getPulled(), this.trafficStats.getCompleted());
+        TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(ipNumeric, portNumber, this.trafficStats.getGenerated(), this.trafficStats.getPushed(), this.trafficStats.getPulled(), this.trafficStats.getCompleted());
         try {
             TCPSender sender = new TCPSender(socketToRegistry);
             byte[] bytes = taskSummaryResponse.getBytes();
