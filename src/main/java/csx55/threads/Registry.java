@@ -199,7 +199,7 @@ public class Registry implements Node {
         int totalPushed = 0;
         int totalCompleted = 0;
         String horizontalTablePiece = "";
-        int numDashes = 19;
+        int numDashes = 23;
         for (int i = 0; i < numDashes; i++) {
             horizontalTablePiece += "-";
         }
@@ -210,7 +210,7 @@ public class Registry implements Node {
             tableLine += horizontalTablePiece + tableCorner;
         }
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17s | %17s | %17s | %17s | %17s |", "Node", "Generated", "Pushed", "Pulled", "Completed", "% of Tasks"));
+        System.out.println(String.format("| %-21s | %21s | %21s | %21s | %21s | %21s |", "Node", "Generated", "Pulled", "Pushed", "Completed", "% of Tasks"));
         System.out.println(tableLine);
 
         for (String key : this.taskResponseMap.keySet()) {
@@ -242,7 +242,7 @@ public class Registry implements Node {
         }
 
         System.out.println(tableLine);
-        System.out.println(String.format("| %-17s | %17d | %17d | %17d | %17d | %17f |", "TOTAL", totalGenerated, totalPushed, totalPulled, totalCompleted, totalPercent));
+        System.out.println(String.format("| %-21s | %21d | %21d | %21d | %21d | %21f |", "TOTAL", totalGenerated, totalPulled, totalPushed, totalCompleted, totalPercent));
         System.out.println(tableLine);
     }
 

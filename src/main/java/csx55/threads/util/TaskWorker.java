@@ -29,7 +29,6 @@ public class TaskWorker implements Runnable {
             miner.mine(task);
             this.trafficStats.incrementCompleted();
             System.out.println(task);
-//            this.threadPool.sendTaskDataToRegistry(task);
         }
 
     }

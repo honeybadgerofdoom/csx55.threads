@@ -6,6 +6,8 @@ import csx55.threads.transport.TCPSender;
 import csx55.threads.wireformats.TaskReport;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ThreadPool {
@@ -29,6 +31,16 @@ public class ThreadPool {
         ThreadPoolManager threadPoolManager = new ThreadPoolManager(this.node.getTrafficStats(), this, this.node.getNumberOfThreads(), this.node.getIpAddress(), this.node.getPortNumber(), this.node.getSocketToRegistry());
         Thread thread = new Thread(threadPoolManager);
         thread.start();
+    }
+
+    public void addTasksToQueue(int numTasks, int round, String nodeId) {
+        String[] id = nodeId.split(":");
+        int port = Integer.parseInt(id[1]);
+        String ip = id[0];
+        for (int i = 0; i < numTasks; i++) {
+            Task task = new Task(ip, port, round, this.node.getRng().nextInt());
+            this.taskQueue.add(task);
+        }
     }
 
     public void addTasksToQueue(int numTasks, int round) {

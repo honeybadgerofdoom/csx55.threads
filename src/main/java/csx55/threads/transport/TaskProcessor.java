@@ -13,17 +13,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.ArrayList;
 
-/*
-* FIXME
-*  - Some nodes are have wrong # of completed tasks in the output table
-*  - When I do: (generated - pushed + pulled) the number is correct, but different than completed
-*  - Look @ when tasks are being added, bug might be there
-*  - generated, pushed, and pulled all look correct
-*       - When are we adding tasks to the taskQueue while not also updating generated, pushed, or pulled?
-*           -> startInitialTasks() & absorbExcessTasks()
-*  - !! When I sum currentNumberOfTasks for each TaskProcessor instance & print it, they're all correct
-* */
-
 public class TaskProcessor implements Runnable {
 
     private final ComputeNode node;

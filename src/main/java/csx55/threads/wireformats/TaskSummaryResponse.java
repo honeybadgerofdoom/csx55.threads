@@ -57,12 +57,12 @@ public class TaskSummaryResponse implements Event {
 
     @Override
     public String toString() {
-        return String.format("| %10d | %10d | %10d | %10d |", generated, pushed, pulled, completed);
+        return String.format("| %10d | %10d | %10d | %10d |", generated, pulled, pushed, completed);
     }
 
     public String formatRow(String id, double percentCompleted) {
         double formatted = Double.parseDouble(df.format(percentCompleted));
-        return String.format("| %-17s | %17d | %17d | %17d | %17d | %17f |", id, generated, pushed, pulled, completed, formatted);
+        return String.format("| %-21s | %21d | %21d | %21d | %21d | %21f |", id, generated, pulled, pushed, completed, formatted);
     }
 
     public byte[] getBytes() throws IOException {

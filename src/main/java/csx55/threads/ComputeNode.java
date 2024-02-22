@@ -68,7 +68,7 @@ public class ComputeNode implements Node {
     private void assignIpAddress() {
         try {
             InetAddress addr = InetAddress.getLocalHost();
-            this.ipAddress = addr.getHostName();
+            this.ipAddress = addr.getHostAddress();
         } catch (UnknownHostException e) {
             System.out.println("ERROR Failed to get MessagingNode IP Address...\n" + e);
         }
