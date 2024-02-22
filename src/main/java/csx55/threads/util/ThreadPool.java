@@ -6,6 +6,8 @@ import csx55.threads.transport.TCPSender;
 import csx55.threads.wireformats.TaskReport;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ThreadPool {
@@ -13,9 +15,16 @@ public class ThreadPool {
     private ConcurrentLinkedQueue<Task> taskQueue;
     private final ComputeNode node;
     private TCPSender sender;
+    private String ipAddress;
 
     public ThreadPool(ComputeNode node) {
         this.node = node;
+        try {
+            InetAddress addr = InetAddress.getLocalHost();
+            this.ipAddress = addr.getHostAddress();
+        } catch (UnknownHostException e) {
+            System.out.println("Failed to get host " + e);
+        }
         try {
             this.sender = new TCPSender(node.getSocketToRegistry());
         } catch (IOException e) {
@@ -33,7 +42,7 @@ public class ThreadPool {
 
     public void addTasksToQueue(int numTasks, int round) {
         for (int i = 0; i < numTasks; i++) {
-            Task task = new Task(this.node.getIpAddress(), this.node.getPortNumber(), round, this.node.getRng().nextInt());
+            Task task = new Task(this.ipAddress, this.node.getPortNumber(), round, this.node.getRng().nextInt());
             this.taskQueue.add(task);
         }
     }
