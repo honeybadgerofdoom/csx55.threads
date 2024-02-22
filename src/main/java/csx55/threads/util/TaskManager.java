@@ -39,7 +39,8 @@ public class TaskManager {
             int tasksTaken = taskDelivery.takeTasks(this.taskDiff);
             this.trafficStats.updatePulled(tasksTaken);
             this.currentNumberOfTasks += tasksTaken;
-            pushTasksToThreadPool(tasksTaken);
+            String nodeId = taskDelivery.getOriginNode();
+            pushTasksToThreadPool(tasksTaken, nodeId);
             updateTaskDiff();
         }
     }
@@ -72,6 +73,10 @@ public class TaskManager {
 
     private synchronized void pushTasksToThreadPool(int numTasks) {
         this.threadPool.addTasksToQueue(numTasks, this.round);
+    }
+
+    private synchronized void pushTasksToThreadPool(int numTasks, String nodeId) {
+        this.threadPool.addTasksToQueue(numTasks, this.round, nodeId);
     }
 
     public synchronized int getCurrentNumberOfTasks() {

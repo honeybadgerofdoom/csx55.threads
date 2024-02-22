@@ -15,16 +15,9 @@ public class ThreadPool {
     private ConcurrentLinkedQueue<Task> taskQueue;
     private final ComputeNode node;
     private TCPSender sender;
-    private String ipAddress;
 
     public ThreadPool(ComputeNode node) {
         this.node = node;
-        try {
-            InetAddress addr = InetAddress.getLocalHost();
-            this.ipAddress = addr.getHostAddress();
-        } catch (UnknownHostException e) {
-            System.out.println("Failed to get host " + e);
-        }
         try {
             this.sender = new TCPSender(node.getSocketToRegistry());
         } catch (IOException e) {
@@ -40,9 +33,19 @@ public class ThreadPool {
         thread.start();
     }
 
+    public void addTasksToQueue(int numTasks, int round, String nodeId) {
+        String[] id = nodeId.split(":");
+        int port = Integer.parseInt(id[1]);
+        String ip = id[0];
+        for (int i = 0; i < numTasks; i++) {
+            Task task = new Task(ip, port, round, this.node.getRng().nextInt());
+            this.taskQueue.add(task);
+        }
+    }
+
     public void addTasksToQueue(int numTasks, int round) {
         for (int i = 0; i < numTasks; i++) {
-            Task task = new Task(this.ipAddress, this.node.getPortNumber(), round, this.node.getRng().nextInt());
+            Task task = new Task(this.node.getIpAddress(), this.node.getPortNumber(), round, this.node.getRng().nextInt());
             this.taskQueue.add(task);
         }
     }

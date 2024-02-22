@@ -43,6 +43,10 @@ public class TaskDelivery implements Event {
         din.close();
     }
 
+    public String getOriginNode() {
+        return this.nodeIds.get(0);
+    }
+
     public int getType() {
         return this.messageType;
     }
