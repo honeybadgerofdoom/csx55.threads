@@ -36,17 +36,6 @@ public class Registry implements Node {
         initializeOutputMaps();
     }
 
-    private boolean checkDoneNodesNumber() {
-        try {
-            this.doneNodesLock.lock();
-            this.numberOfDoneNodes++;
-        } catch (Exception ignored) {
-        } finally {
-            this.doneNodesLock.unlock();
-        }
-        return this.numberOfDoneNodes == registryNodes.size();
-    }
-
     private boolean checkTaskSummariesNumber() {
         try {
             this.taskSummariesLock.lock();
@@ -213,29 +202,20 @@ public class Registry implements Node {
 
     private void createOverlay() {
         List<String> nodes = new ArrayList<>(this.registryNodes.keySet());
-        Map<String, MessagingNodesList> messagingNodeMap = new HashMap<>();
         for (int i = 0; i < nodes.size(); i++) {
             String key = nodes.get(i);
-            List<String> partnerNodes = new ArrayList<>();
+            String partnerNode;
             if (i < nodes.size() - 1) {
-                partnerNodes.add(nodes.get(i+1));
+                partnerNode = nodes.get(i+1);
             }
             else {
-                partnerNodes.add(nodes.get(0));
+                partnerNode = nodes.get(0);
             }
-            MessagingNodesList messagingNodesList = new MessagingNodesList(partnerNodes, this.numberOfThreads);
-            messagingNodeMap.put(key, messagingNodesList);
-        }
-        sendMessagingNodesListToNodes(messagingNodeMap);
-    }
-
-    private void sendMessagingNodesListToNodes(Map<String, MessagingNodesList> messagingNodesListMap) {
-        for (String key : messagingNodesListMap.keySet()) {
+            PartnerNodeInfo partnerNodeInfo = new PartnerNodeInfo(partnerNode, this.numberOfThreads);
             Socket socket = this.registryNodes.get(key);
-            MessagingNodesList messagingNodesList = messagingNodesListMap.get(key);
             try {
                 TCPSender sender = new TCPSender(socket);
-                byte[] bytes = messagingNodesList.getBytes();
+                byte[] bytes = partnerNodeInfo.getBytes();
                 sender.sendData(bytes);
             } catch (IOException e) {
                 System.out.println("Failed to build TCPSender for MessagingNodesList");
@@ -249,7 +229,7 @@ public class Registry implements Node {
         }
     }
 
-    public void initiateMessagePassing(int numberOfRounds) {
+    public void start(int numberOfRounds) {
         TaskInitiate taskInitiateMessage = new TaskInitiate(numberOfRounds);
         sendToAllNodes(taskInitiateMessage);
     }

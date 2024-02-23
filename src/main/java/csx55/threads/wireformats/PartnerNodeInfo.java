@@ -1,36 +1,28 @@
 package csx55.threads.wireformats;
 
 import java.io.*;
-import java.util.*;
 
-public class MessagingNodesList implements Event {
+public class PartnerNodeInfo implements Event {
 
     private final int messageType = Protocol.MESSAGING_NODES_LIST;
-    private final int numberOfPeerMessagingNodes;
-    private final List<String> info;
+    private final String partnerNode;
     private final int numberOfThreads;
 
-    public MessagingNodesList(List<String> info, int numberOfThreads) {
-        this.numberOfPeerMessagingNodes = info.size();
-        this.info = info;
+    public PartnerNodeInfo(String partnerNode, int numberOfThreads) {
+        this.partnerNode = partnerNode;
         this.numberOfThreads = numberOfThreads;
     }
 
-    public MessagingNodesList(byte[] bytes) throws IOException {
+    public PartnerNodeInfo(byte[] bytes) throws IOException {
         ByteArrayInputStream bArrayInputStream = new ByteArrayInputStream(bytes);
         DataInputStream din = new DataInputStream(new BufferedInputStream(bArrayInputStream));
 
         din.readInt(); // take messageType out of stream
 
-        this.numberOfPeerMessagingNodes = din.readInt();
-
-        this.info = new ArrayList<>();
-        for (int i = 0; i < this.numberOfPeerMessagingNodes; i++) {
-            int currentInfoLength = din.readInt();
-            byte[] currentInfoBytes = new byte[currentInfoLength];
-            din.readFully(currentInfoBytes);
-            this.info.add(new String(currentInfoBytes));
-        }
+        int partnerNodeLength = din.readInt();
+        byte[] partnerNodeBytes = new byte[partnerNodeLength];
+        din.readFully(partnerNodeBytes);
+        this.partnerNode = new String(partnerNodeBytes);
 
         this.numberOfThreads = din.readInt();
 
@@ -42,8 +34,8 @@ public class MessagingNodesList implements Event {
         return this.messageType;
     }
 
-    public List<String> getInfo() {
-        return this.info;
+    public String getPartnerNode() {
+        return partnerNode;
     }
 
     public int getNumberOfThreads() {
@@ -56,14 +48,11 @@ public class MessagingNodesList implements Event {
         DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
 
         dout.writeInt(this.messageType);
-        dout.writeInt(this.numberOfPeerMessagingNodes);
 
-        for (String partnerInfo : this.info) {
-            byte[] infoBytes = partnerInfo.getBytes();
-            int elementLength = infoBytes.length;
-            dout.writeInt(elementLength);
-            dout.write(infoBytes);
-        }
+        byte[] partnerNodeBytes = this.partnerNode.getBytes();
+        int elementLength = partnerNodeBytes.length;
+        dout.writeInt(elementLength);
+        dout.write(partnerNodeBytes);
 
         dout.writeInt(this.numberOfThreads);
 

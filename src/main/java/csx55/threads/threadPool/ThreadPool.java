@@ -1,4 +1,4 @@
-package csx55.threads.util;
+package csx55.threads.threadPool;
 
 import csx55.threads.hashing.Task;
 import csx55.threads.ComputeNode;

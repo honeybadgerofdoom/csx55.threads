@@ -29,7 +29,7 @@ public class EventFactory {
             case (Protocol.DEREGISTER_RESPONSE):
                 return new DeregisterResponse(bytes);
             case (Protocol.MESSAGING_NODES_LIST):
-                return new MessagingNodesList(bytes);
+                return new PartnerNodeInfo(bytes);
             case (Protocol.TASK_INITIATE):
                 return new TaskInitiate(bytes);
             case (Protocol.TRAFFIC_SUMMARY):
@@ -37,7 +37,7 @@ public class EventFactory {
             case (Protocol.POKE):
                 return new PartnerPoke(bytes);
             case (Protocol.TASK_AVERAGE):
-                return new TaskAverage(bytes);
+                return new RoundAverage(bytes);
             case (Protocol.TASK_DELIVERY):
                 return new TaskDelivery(bytes);
             case (Protocol.AVERAGES_CALCULATED):

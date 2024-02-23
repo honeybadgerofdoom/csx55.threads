@@ -3,20 +3,16 @@ package csx55.threads;
 import csx55.threads.cli.ComputeNodeCLIManager;
 import csx55.threads.node.Node;
 import csx55.threads.node.PartnerNodeRef;
-import csx55.threads.transport.TaskProcessor;
-import csx55.threads.util.EventAndSocket;
-import csx55.threads.util.ThreadPool;
-import csx55.threads.util.TrafficStats;
+import csx55.threads.task.TaskProcessor;
+import csx55.threads.threadPool.ThreadPool;
+import csx55.threads.util.ComputeNodeTaskStats;
 import csx55.threads.wireformats.*;
 import csx55.threads.transport.TCPReceiverThread;
 import csx55.threads.transport.TCPSender;
-import csx55.threads.transport.MessagePassingThread;
 
 import java.net.*;
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 
 public class ComputeNode implements Node {
@@ -29,7 +25,7 @@ public class ComputeNode implements Node {
     private final String registryIpAddress;
     private final int registryPortNumber;
 
-    private TrafficStats trafficStats;
+    private ComputeNodeTaskStats computeNodeTaskStats;
 
     private PartnerNodeRef partnerNode;
 
@@ -58,7 +54,7 @@ public class ComputeNode implements Node {
     }
 
     private void initializeTrafficStats() {
-        this.trafficStats = new TrafficStats();
+        this.computeNodeTaskStats = new ComputeNodeTaskStats();
     }
 
     public int getNumberOfThreads() {
@@ -117,8 +113,8 @@ public class ComputeNode implements Node {
         return this.socketToRegistry;
     }
 
-    public TrafficStats getTrafficStats() {
-        return this.trafficStats;
+    public ComputeNodeTaskStats getTrafficStats() {
+        return this.computeNodeTaskStats;
     }
 
     public Random getRng() {
@@ -156,7 +152,7 @@ public class ComputeNode implements Node {
                     handleDeregisterResponse(event);
                     break;
                 case (Protocol.MESSAGING_NODES_LIST):
-                    handleMessagingNodesList(event);
+                    handlePartnerNodeInfo(event);
                     break;
                 case (Protocol.TASK_INITIATE):
                     handleTaskInitiate(event);
@@ -195,23 +191,18 @@ public class ComputeNode implements Node {
         }
     }
 
-    private void handleMessagingNodesList(Event event) {
-        List<String> info = ((MessagingNodesList) event).getInfo();
-        this.numberOfThreads = ((MessagingNodesList) event).getNumberOfThreads();
-        int numberOfConnections = 0;
-        for (String nodeInfo : info) {
-            String[] nodeInfoList = nodeInfo.split(":");
-            String partnerIpAddress = nodeInfoList[0];
-            int partnerPortNumber = Integer.parseInt(nodeInfoList[1]);
-            try {
-                Socket socket = new Socket(partnerIpAddress, partnerPortNumber);
-                this.partnerNode = new PartnerNodeRef(socket);
-                numberOfConnections++;
-            } catch (IOException e) {
-                System.out.println("Failed to create Socket to partner " + nodeInfo);
-            }
+    private void handlePartnerNodeInfo(Event event) {
+        String partnerNode = ((PartnerNodeInfo) event).getPartnerNode();
+        this.numberOfThreads = ((PartnerNodeInfo) event).getNumberOfThreads();
+        String[] nodeInfoList = partnerNode.split(":");
+        String partnerIpAddress = nodeInfoList[0];
+        int partnerPortNumber = Integer.parseInt(nodeInfoList[1]);
+        try {
+            Socket socket = new Socket(partnerIpAddress, partnerPortNumber);
+            this.partnerNode = new PartnerNodeRef(socket);
+        } catch (IOException e) {
+            System.out.println("Failed to create Socket to partner " + partnerNode);
         }
-        System.out.println("All connections established Number of connections: " + numberOfConnections);
     }
 
     private void handleTaskInitiate(Event event) {
@@ -238,8 +229,8 @@ public class ComputeNode implements Node {
     }
 
     private void handleTaskAverage(Event event) {
-        TaskAverage taskAverage = (TaskAverage) event;
-        this.taskProcessor.handleTaskAverage(taskAverage);
+        RoundAverage roundAverage = (RoundAverage) event;
+        this.taskProcessor.handleTaskAverage(roundAverage);
     }
 
     private void handleTaskDelivery(Event event) {
@@ -250,11 +241,6 @@ public class ComputeNode implements Node {
     private void handleAveragesCalculated(Event event) {
         AveragesCalculated averagesCalculated = (AveragesCalculated) event;
         this.taskProcessor.handleAveragesCalculated(averagesCalculated);
-    }
-
-    @Override
-    public String toString() {
-        return "\nMessagingNode\n---------------------\n" + this.getIpAddress() + ":" + this.getPortNumber() + "\nPartner Node: " + this.partnerNode;
     }
 
     public void deregisterSelf() {
@@ -272,6 +258,11 @@ public class ComputeNode implements Node {
         String message = "Hi from " + this.ipAddress + ":" + this.portNumber;
         PartnerPoke poke = new PartnerPoke(message);
         this.partnerNode.writeToSocket(poke);
+    }
+
+    @Override
+    public String toString() {
+        return "\nMessagingNode\n---------------------\n" + this.getIpAddress() + ":" + this.getPortNumber() + "\nPartner Node: " + this.partnerNode;
     }
 
     public static void main(String[] args) {

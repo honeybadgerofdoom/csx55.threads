@@ -1,11 +1,9 @@
-package csx55.threads.transport;
+package csx55.threads.task;
 
 import csx55.threads.ComputeNode;
 import csx55.threads.node.PartnerNodeRef;
-import csx55.threads.util.TaskManager;
 import csx55.threads.wireformats.AveragesCalculated;
-import csx55.threads.wireformats.Event;
-import csx55.threads.wireformats.TaskAverage;
+import csx55.threads.wireformats.RoundAverage;
 import csx55.threads.wireformats.TaskDelivery;
 
 import java.util.ArrayDeque;
@@ -78,8 +76,8 @@ public class TaskProcessor implements Runnable {
 
     private void getTaskAverage(PartnerNodeRef partnerNodeRef, int iteration) {
         TaskManager taskManager = this.taskManagerList.get(iteration);
-        TaskAverage taskAverage = new TaskAverage(taskManager.getCurrentNumberOfTasks(), this.node.getId(), iteration);
-        partnerNodeRef.writeToSocket(taskAverage);
+        RoundAverage roundAverage = new RoundAverage(taskManager.getCurrentNumberOfTasks(), this.node.getId(), iteration);
+        partnerNodeRef.writeToSocket(roundAverage);
     }
 
     private void balanceLoad(PartnerNodeRef partnerNodeRef, int iteration) {
@@ -96,21 +94,21 @@ public class TaskProcessor implements Runnable {
 
     }
 
-    public void handleTaskAverage(TaskAverage taskAverage) {
+    public void handleTaskAverage(RoundAverage roundAverage) {
 
         // Get correct TaskManager instance
-        int iteration = taskAverage.getIteration();
+        int iteration = roundAverage.getIteration();
         TaskManager taskManager = this.taskManagerList.get(iteration);
 
         // We got our message back
-        if (taskAverage.nodeIsFirst(this.node.getId())) {
-            double average = taskAverage.getSum() / taskAverage.getNumberOfNodes();
+        if (roundAverage.nodeIsFirst(this.node.getId())) {
+            double average = roundAverage.getSum() / roundAverage.getNumberOfNodes();
             taskManager.setAverage(average);
         }
 
         // Not our message, relay it
         else {
-            relayTaskAverage(taskManager, taskAverage);
+            relayTaskAverage(taskManager, roundAverage);
         }
 
     }
@@ -148,9 +146,9 @@ public class TaskProcessor implements Runnable {
         }
     }
 
-    private void relayTaskAverage(TaskManager taskManager, TaskAverage taskAverage) {
-        taskAverage.processRelay(this.node.getId(), taskManager.getInitialNumberOfTasks());
-        this.node.getPartnerNode().writeToSocket(taskAverage);
+    private void relayTaskAverage(TaskManager taskManager, RoundAverage roundAverage) {
+        roundAverage.processRelay(this.node.getId(), taskManager.getInitialNumberOfTasks());
+        this.node.getPartnerNode().writeToSocket(roundAverage);
     }
 
     private void relayTaskDelivery(TaskDelivery taskDelivery) {

@@ -1,18 +1,20 @@
-package csx55.threads.util;
+package csx55.threads.task;
 
 import csx55.threads.hashing.Miner;
 import csx55.threads.hashing.Task;
+import csx55.threads.threadPool.ThreadPool;
+import csx55.threads.util.ComputeNodeTaskStats;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskWorker implements Runnable {
 
     private final ThreadPool threadPool;
-    private final TrafficStats trafficStats;
+    private final ComputeNodeTaskStats computeNodeTaskStats;
 
-    public TaskWorker(ThreadPool threadPool, TrafficStats trafficStats) {
+    public TaskWorker(ThreadPool threadPool, ComputeNodeTaskStats computeNodeTaskStats) {
         this.threadPool = threadPool;
-        this.trafficStats = trafficStats;
+        this.computeNodeTaskStats = computeNodeTaskStats;
     }
 
     @Override
@@ -27,7 +29,7 @@ public class TaskWorker implements Runnable {
             Task task = taskQueue.poll();
             if (task == null) continue;
             miner.mine(task);
-            this.trafficStats.incrementCompleted();
+            this.computeNodeTaskStats.incrementCompleted();
             System.out.println(task);
         }
 
