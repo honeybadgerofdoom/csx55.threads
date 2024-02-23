@@ -2,6 +2,7 @@ package csx55.threads.task;
 
 import csx55.threads.ComputeNode;
 import csx55.threads.node.PartnerNodeRef;
+import csx55.threads.util.AgreementSpace;
 import csx55.threads.wireformats.*;
 
 import java.util.ArrayDeque;
@@ -15,19 +16,16 @@ public class TaskProcessor implements Runnable {
     private final ComputeNode node;
     private int numberOfRounds;
     private List<TaskManager> taskManagerList;
-
     private final ConcurrentLinkedQueue<NodeAgreement> nodeAgreementDeque;
-
-    private boolean allTaskManagersReady = false;
-    private boolean myTaskManagersReady = false;
-
-    private boolean allNodesAreReadyToProceed = false;
-    private boolean iAmReadyToProceed = false;
+    private final AgreementSpace taskManagerAgreementSpace;
+    private final AgreementSpace averagesAgreementSpace;
 
     public TaskProcessor(ComputeNode node) {
         System.out.println("TaskProcessor is instantiated.");
         this.node = node;
         this.nodeAgreementDeque = new ConcurrentLinkedQueue<>();
+        this.taskManagerAgreementSpace = new AgreementSpace(Protocol.AGR_TASK_MANAGERS);
+        this.averagesAgreementSpace = new AgreementSpace(Protocol.AGR_AVERAGE);
     }
 
     public void setNumberOfRounds(int numberOfRounds) {
@@ -38,11 +36,9 @@ public class TaskProcessor implements Runnable {
     public void run() {
         System.out.println("Starting " + this.numberOfRounds + " rounds");
         initializeTaskManagers();
-        waitForNodeAgreement(Protocol.AGR_TASK_MANAGERS);
-        allNodesAreReadyToProceed = false;
-        iAmReadyToProceed = false;
+        waitForNodeAgreement(taskManagerAgreementSpace);
         getAverages();
-        waitForNodeAgreement(Protocol.AGR_AVERAGE);
+        waitForNodeAgreement(averagesAgreementSpace);
         sendLoadBalancingMessages();
     }
 
@@ -72,39 +68,20 @@ public class TaskProcessor implements Runnable {
         }
     }
 
-    private void waitForNodeAgreement(int agreementPolicy) {
-
-        if (agreementPolicy == Protocol.AGR_TASK_MANAGERS) {
-            myTaskManagersReady = true;
-            while (!this.nodeAgreementDeque.isEmpty()) {
-                NodeAgreement nodeAgreement = this.nodeAgreementDeque.poll();
-                if (nodeAgreement.getAgreement() == agreementPolicy) {
-                    handleNodeAgreement(nodeAgreement);
-                }
-            }
-            NodeAgreement nodeAgreement = new NodeAgreement(agreementPolicy, this.node.getId());
-            this.node.getPartnerNode().writeToSocket(nodeAgreement);
-            while (!allTaskManagersReady) {
-                Thread.onSpinWait();
+    private void waitForNodeAgreement(AgreementSpace agreementSpace) {
+        int agreementPolicy = agreementSpace.getAgreementPolicy();
+        agreementSpace.setIAmReady(true);
+        while (!this.nodeAgreementDeque.isEmpty()) {
+            NodeAgreement nodeAgreement = this.nodeAgreementDeque.poll();
+            if (nodeAgreement.getAgreement() == agreementPolicy) {
+                handleNodeAgreement(nodeAgreement);
             }
         }
-
-        else if (agreementPolicy == Protocol.AGR_AVERAGE) {
-            iAmReadyToProceed = true;
-            while (!this.nodeAgreementDeque.isEmpty()) {
-                NodeAgreement nodeAgreement = this.nodeAgreementDeque.poll();
-                if (nodeAgreement.getAgreement() == agreementPolicy) {
-                    handleNodeAgreement(nodeAgreement);
-                }
-            }
-            NodeAgreement nodeAgreement = new NodeAgreement(agreementPolicy, this.node.getId());
-            this.node.getPartnerNode().writeToSocket(nodeAgreement);
-            while (!allNodesAreReadyToProceed) {
-                Thread.onSpinWait();
-            }
+        NodeAgreement nodeAgreement = new NodeAgreement(agreementPolicy, this.node.getId());
+        this.node.getPartnerNode().writeToSocket(nodeAgreement);
+        while (!agreementSpace.areAllReady()) {
+            Thread.onSpinWait();
         }
-
-
     }
 
     private void getTaskAverage(int iteration) {
@@ -167,29 +144,26 @@ public class TaskProcessor implements Runnable {
     }
 
     public void handleNodeAgreement(NodeAgreement nodeAgreement) {
+
+        // Get the correct AgreementSpace instance
         int agreementPolicy = nodeAgreement.getAgreement();
-        if (agreementPolicy == Protocol.AGR_TASK_MANAGERS) {
-            if (nodeAgreement.iSentThisMessage(this.node.getId())) {
-                allTaskManagersReady = true;
-            }
-            else if (myTaskManagersReady) {
-                this.node.getPartnerNode().writeToSocket(nodeAgreement);
-            }
-            else {
-                this.nodeAgreementDeque.add(nodeAgreement);
-            }
+        AgreementSpace agreementSpace;
+        if (agreementPolicy == Protocol.AGR_TASK_MANAGERS) agreementSpace = taskManagerAgreementSpace;
+        else agreementSpace = averagesAgreementSpace;
+
+        // If I sent this, everyone has agreed
+        if (nodeAgreement.iSentThisMessage(this.node.getId())) {
+            agreementSpace.setAllAreReady(true);
         }
 
-        else if (agreementPolicy == Protocol.AGR_AVERAGE) {
-            if (nodeAgreement.iSentThisMessage(this.node.getId())) {
-                allNodesAreReadyToProceed = true;
-            }
-            else if (iAmReadyToProceed) {
-                this.node.getPartnerNode().writeToSocket(nodeAgreement);
-            }
-            else {
-                this.nodeAgreementDeque.add(nodeAgreement);
-            }
+        // If I am ready, relay this message
+        else if (agreementSpace.amIReady()) {
+            this.node.getPartnerNode().writeToSocket(nodeAgreement);
+        }
+
+        // I am not ready yet, push this message into my nodeAgreementDeque
+        else {
+            this.nodeAgreementDeque.add(nodeAgreement);
         }
 
     }
@@ -210,29 +184,6 @@ public class TaskProcessor implements Runnable {
             sum += taskManager.getCurrentNumberOfTasks();
         }
         System.out.println("Total tasks: " + sum);
-    }
-
-    private class AgreementSpace {
-
-        private boolean iAmReady = false;
-        private boolean allAreReady = false;
-
-        public boolean isiAmReady() {
-            return iAmReady;
-        }
-
-        public boolean isAllAreReady() {
-            return allAreReady;
-        }
-
-        public void setIAmReady(boolean iAmReady) {
-            this.iAmReady = iAmReady;
-        }
-
-        public void setAllAreReady(boolean allAreReady) {
-            this.allAreReady = allAreReady;
-        }
-        
     }
 
 }
