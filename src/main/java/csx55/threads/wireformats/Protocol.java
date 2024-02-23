@@ -21,5 +21,6 @@ public class Protocol {
 
     public static final int AGR_AVERAGE = 0;
     public static final int AGR_TASK_MANAGERS = 1;
+    public static final int AGR_ROUNDS = 2;
 
 }

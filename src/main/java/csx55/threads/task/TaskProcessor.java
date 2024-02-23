@@ -1,12 +1,9 @@
 package csx55.threads.task;
 
 import csx55.threads.ComputeNode;
-import csx55.threads.node.PartnerNodeRef;
 import csx55.threads.util.AgreementSpace;
 import csx55.threads.wireformats.*;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -17,13 +14,14 @@ public class TaskProcessor implements Runnable {
     private int numberOfRounds;
     private List<TaskManager> taskManagerList;
     private final ConcurrentLinkedQueue<NodeAgreement> nodeAgreementDeque;
+    private final AgreementSpace roundsAgreementSpace;
     private final AgreementSpace taskManagerAgreementSpace;
     private final AgreementSpace averagesAgreementSpace;
 
     public TaskProcessor(ComputeNode node) {
-        System.out.println("TaskProcessor is instantiated.");
         this.node = node;
         this.nodeAgreementDeque = new ConcurrentLinkedQueue<>();
+        this.roundsAgreementSpace = new AgreementSpace(Protocol.AGR_ROUNDS);
         this.taskManagerAgreementSpace = new AgreementSpace(Protocol.AGR_TASK_MANAGERS);
         this.averagesAgreementSpace = new AgreementSpace(Protocol.AGR_AVERAGE);
     }
@@ -35,11 +33,15 @@ public class TaskProcessor implements Runnable {
 
     public void run() {
         System.out.println("Starting " + this.numberOfRounds + " rounds");
+//        waitOnDistributedBarrier(roundsAgreementSpace);
         initializeTaskManagers();
-        waitForNodeAgreement(taskManagerAgreementSpace);
+        waitOnDistributedBarrier(taskManagerAgreementSpace);
         getAverages();
-        waitForNodeAgreement(averagesAgreementSpace);
+        waitOnDistributedBarrier(averagesAgreementSpace);
         sendLoadBalancingMessages();
+        roundsAgreementSpace.reset();
+        taskManagerAgreementSpace.reset();
+        averagesAgreementSpace.reset();
     }
 
     private void sendLoadBalancingMessages() {
@@ -68,12 +70,12 @@ public class TaskProcessor implements Runnable {
         }
     }
 
-    private void waitForNodeAgreement(AgreementSpace agreementSpace) {
+    private void waitOnDistributedBarrier(AgreementSpace agreementSpace) {
         int agreementPolicy = agreementSpace.getAgreementPolicy();
         agreementSpace.setIAmReady(true);
         while (!this.nodeAgreementDeque.isEmpty()) {
             NodeAgreement nodeAgreement = this.nodeAgreementDeque.poll();
-            if (nodeAgreement.getAgreement() == agreementPolicy) {
+            if (nodeAgreement.getAgreementPolicy() == agreementPolicy) {
                 handleNodeAgreement(nodeAgreement);
             }
         }
@@ -146,10 +148,25 @@ public class TaskProcessor implements Runnable {
     public void handleNodeAgreement(NodeAgreement nodeAgreement) {
 
         // Get the correct AgreementSpace instance
-        int agreementPolicy = nodeAgreement.getAgreement();
+        int agreementPolicy = nodeAgreement.getAgreementPolicy();
         AgreementSpace agreementSpace;
-        if (agreementPolicy == Protocol.AGR_TASK_MANAGERS) agreementSpace = taskManagerAgreementSpace;
-        else agreementSpace = averagesAgreementSpace;
+
+        switch (agreementPolicy) {
+            case Protocol.AGR_ROUNDS:
+                agreementSpace = roundsAgreementSpace;
+                break;
+            case Protocol.AGR_TASK_MANAGERS:
+                agreementSpace = taskManagerAgreementSpace;
+                break;
+//            case Protocol.AGR_AVERAGE:
+//                agreementSpace = averagesAgreementSpace;
+//                break;
+            default:
+                agreementSpace = averagesAgreementSpace;
+                break;
+        }
+
+//        assert agreementSpace != null;
 
         // If I sent this, everyone has agreed
         if (nodeAgreement.iSentThisMessage(this.node.getId())) {

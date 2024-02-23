@@ -5,12 +5,12 @@ import java.io.*;
 public class NodeAgreement implements Event {
 
     private final int messageType = Protocol.NODE_AGREEMENT;
-    private final int agreement;
+    private final int agreementPolicy;
     private final String sourceNode;
 
-    public NodeAgreement(int agreement, String sourceNode) {
+    public NodeAgreement(int agreementPolicy, String sourceNode) {
         this.sourceNode = sourceNode;
-        this.agreement = agreement;
+        this.agreementPolicy = agreementPolicy;
     }
 
     public NodeAgreement(byte[] bytes) throws IOException {
@@ -19,7 +19,7 @@ public class NodeAgreement implements Event {
 
         din.readInt(); // take messageType out of stream
 
-        this.agreement = din.readInt();
+        this.agreementPolicy = din.readInt();
 
         int sourceNodeLength = din.readInt();
         byte[] sourceNodeBytes = new byte[sourceNodeLength];
@@ -38,8 +38,8 @@ public class NodeAgreement implements Event {
         return id.equals(this.sourceNode);
     }
 
-    public int getAgreement() {
-        return this.agreement;
+    public int getAgreementPolicy() {
+        return this.agreementPolicy;
     }
 
     public byte[] getBytes() throws IOException {
@@ -48,7 +48,7 @@ public class NodeAgreement implements Event {
         DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
 
         dout.writeInt(this.messageType);
-        dout.writeInt(this.agreement);
+        dout.writeInt(this.agreementPolicy);
 
         byte[] sourceNodeBytes = sourceNode.getBytes();
         int elementLength = sourceNodeBytes.length;
