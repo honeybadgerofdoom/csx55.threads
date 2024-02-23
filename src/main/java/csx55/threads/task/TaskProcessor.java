@@ -17,6 +17,7 @@ public class TaskProcessor implements Runnable {
     private int numberOfRounds;
     private List<TaskManager> taskManagerList;
     private final ConcurrentLinkedQueue<NodeAgreement> nodeAgreementDeque;
+    private final AgreementSpace roundsAgreementSpace;
     private final AgreementSpace taskManagerAgreementSpace;
     private final AgreementSpace averagesAgreementSpace;
 
@@ -24,6 +25,7 @@ public class TaskProcessor implements Runnable {
         System.out.println("TaskProcessor is instantiated.");
         this.node = node;
         this.nodeAgreementDeque = new ConcurrentLinkedQueue<>();
+        this.roundsAgreementSpace = new AgreementSpace(Protocol.AGR_ROUNDS);
         this.taskManagerAgreementSpace = new AgreementSpace(Protocol.AGR_TASK_MANAGERS);
         this.averagesAgreementSpace = new AgreementSpace(Protocol.AGR_AVERAGE);
     }
@@ -35,11 +37,17 @@ public class TaskProcessor implements Runnable {
 
     public void run() {
         System.out.println("Starting " + this.numberOfRounds + " rounds");
+//        waitForNodeAgreement(roundsAgreementSpace);
+
+
         initializeTaskManagers();
         waitForNodeAgreement(taskManagerAgreementSpace);
         getAverages();
         waitForNodeAgreement(averagesAgreementSpace);
         sendLoadBalancingMessages();
+//        roundsAgreementSpace.reset();
+//        taskManagerAgreementSpace.reset();
+//        averagesAgreementSpace.reset();
     }
 
     private void sendLoadBalancingMessages() {

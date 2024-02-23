@@ -30,4 +30,9 @@ public class AgreementSpace {
         return agreementPolicy;
     }
 
+    public void reset() {
+        this.iAmReady = false;
+        this.allAreReady = false;
+    }
+
 }
