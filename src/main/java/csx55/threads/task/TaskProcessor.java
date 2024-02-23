@@ -43,9 +43,9 @@ public class TaskProcessor implements Runnable {
         getAverages();
         waitOnDistributedBarrier(averagesAgreementSpace);
         sendLoadBalancingMessages();
-//        roundsAgreementSpace.reset();
-//        taskManagerAgreementSpace.reset();
-//        averagesAgreementSpace.reset();
+        roundsAgreementSpace.reset();
+        taskManagerAgreementSpace.reset();
+        averagesAgreementSpace.reset();
     }
 
     private void sendLoadBalancingMessages() {
