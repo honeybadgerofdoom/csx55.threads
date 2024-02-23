@@ -98,9 +98,6 @@ public class Registry implements Node {
             case (Protocol.TRAFFIC_SUMMARY):
                 handleTrafficSummary(event);
                 break;
-            case (Protocol.TASK_REPORT):
-                handleTaskReport(event);
-                break;
             default:
                 System.out.println("onEvent trying to process invalid event type: " + event.getType());
         }
@@ -154,11 +151,6 @@ public class Registry implements Node {
             this.numberOfDoneNodes = 0;
             this.taskSummariesCollected = 0;
         }
-    }
-
-    private void handleTaskReport(Event event) {
-        TaskReport taskReport = (TaskReport) event;
-        System.out.println(taskReport.getData());
     }
 
     private void printFinalOutput() {

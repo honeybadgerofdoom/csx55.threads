@@ -31,7 +31,8 @@ public class ComputeNode implements Node {
 
     private TrafficStats trafficStats;
 
-    private ConcurrentHashMap<String, PartnerNodeRef> partnerNodes; // FIXME Just 1 partner?
+    private PartnerNodeRef partnerNode;
+
     private Socket socketToRegistry;
     private Random rng;
     private ThreadPool threadPool;
@@ -41,7 +42,6 @@ public class ComputeNode implements Node {
     public ComputeNode(String registryIpAddress, int registryPortNumber) {
         this.registryIpAddress = registryIpAddress;
         this.registryPortNumber = registryPortNumber;
-        this.partnerNodes = new ConcurrentHashMap<>();
     }
 
     public void doWork() {
@@ -121,10 +121,6 @@ public class ComputeNode implements Node {
         return this.trafficStats;
     }
 
-    public Map<String, PartnerNodeRef> getPartnerNodes () {
-        return this.partnerNodes;
-    }
-
     public Random getRng() {
         return this.rng;
     }
@@ -133,21 +129,12 @@ public class ComputeNode implements Node {
         return this.portNumber;
     }
 
-    public ConcurrentLinkedQueue<EventAndSocket> getEventQueue() {
-//        return this.eventQueue;
-        return null;
-    }
-
     public String getIpAddress() {
         return this.ipAddress;
     }
 
     public ServerSocket getServerSocket() {
         return this.serverSocket;
-    }
-
-    public void addEventToThreadPool(Event event, Socket socket) {
-//        this.eventQueue.add(new EventAndSocket(event, socket));
     }
 
     public ThreadPool getThreadPool() {
@@ -171,14 +158,8 @@ public class ComputeNode implements Node {
                 case (Protocol.MESSAGING_NODES_LIST):
                     handleMessagingNodesList(event);
                     break;
-                case (Protocol.PARTNER_CONNECTION_REQUEST):
-                    handlePartnerConnection(event, socket);
-                    break;
                 case (Protocol.TASK_INITIATE):
                     handleTaskInitiate(event);
-                    break;
-                case (Protocol.PULL_TRAFFIC_SUMMARY):
-                    handleTrafficSummary();
                     break;
                 case (Protocol.POKE):
                     handlePoke(event);
@@ -216,8 +197,7 @@ public class ComputeNode implements Node {
 
     private void handleMessagingNodesList(Event event) {
         List<String> info = ((MessagingNodesList) event).getInfo();
-        int numberOfThreads = ((MessagingNodesList) event).getNumberOfThreads();
-        this.numberOfThreads = numberOfThreads;
+        this.numberOfThreads = ((MessagingNodesList) event).getNumberOfThreads();
         int numberOfConnections = 0;
         for (String nodeInfo : info) {
             String[] nodeInfoList = nodeInfo.split(":");
@@ -225,28 +205,13 @@ public class ComputeNode implements Node {
             int partnerPortNumber = Integer.parseInt(nodeInfoList[1]);
             try {
                 Socket socket = new Socket(partnerIpAddress, partnerPortNumber);
-                TCPReceiverThread receiver = new TCPReceiverThread(this, socket);
-                Thread thread = new Thread(receiver);
-                thread.start();
-                PartnerNodeRef partnerNodeRef = new PartnerNodeRef(socket, 0);
-                PartnerConnectionRequest partnerConnectionRequest = new PartnerConnectionRequest(this.ipAddress, this.portNumber, 0);
-                partnerNodeRef.writeToSocket(partnerConnectionRequest);
-                this.partnerNodes.put(nodeInfo, partnerNodeRef);
+                this.partnerNode = new PartnerNodeRef(socket);
                 numberOfConnections++;
             } catch (IOException e) {
                 System.out.println("Failed to create Socket to partner " + nodeInfo);
             }
         }
         System.out.println("All connections established Number of connections: " + numberOfConnections);
-    }
-
-    private void handlePartnerConnection(Event event, Socket socket) {
-        String ipAddress = ((PartnerConnectionRequest) event).getIpAddress();
-        int port = ((PartnerConnectionRequest) event).getPortNumber();
-        int linkWeight = ((PartnerConnectionRequest) event).getLinkWeight();
-        String key = ipAddress + ":" + port;
-        PartnerNodeRef partnerNodeRef = new PartnerNodeRef(socket, linkWeight);
-        this.partnerNodes.put(key, partnerNodeRef);
     }
 
     private void handleTaskInitiate(Event event) {
@@ -259,44 +224,12 @@ public class ComputeNode implements Node {
         thread.start();
     }
 
-    public PartnerNodeRef getOneNeighbor() {
-        List<String> partnerIds = new ArrayList<>(this.partnerNodes.keySet());
-        String id = partnerIds.get(0);
-        return this.partnerNodes.get(id);
-    }
-
-    public void reportAllMessagesPassed() {
-        TaskComplete taskComplete = new TaskComplete(this.getIpAddress(), this.getPortNumber());
-        try {
-            byte[] bytes = taskComplete.getBytes();
-            TCPSender sender = new TCPSender(this.getSocketToRegistry());
-            sender.sendData(bytes);
-        } catch (IOException e) {
-            System.out.println("Failed to send TaskComplete message to Registry." + e);
-        }
+    public PartnerNodeRef getPartnerNode() {
+        return this.partnerNode;
     }
 
     public void printTaskManagerSum() {
         this.taskProcessor.printTaskManagerStats();
-    }
-
-    private void handleTrafficSummary() {
-//        TaskSummaryResponse taskSummaryResponse = new TaskSummaryResponse(
-//                this.ipAddress,
-//                this.portNumber,
-//                this.trafficStats.getSendTracker(),
-//                this.trafficStats.getSendSummation(),
-//                this.trafficStats.getReceiveTracker(),
-//                this.trafficStats.getReceiveSummation(),
-//                this.trafficStats.getRelayTracker());
-//        try {
-//            byte[] bytes = taskSummaryResponse.getBytes();
-//            TCPSender sender = new TCPSender(this.socketToRegistry);
-//            sender.sendData(bytes);
-//            this.trafficStats.reset();
-//        } catch (IOException e) {
-//            System.out.println("Failed to send TaskSummaryResponse " + e);
-//        }
     }
 
     private void handlePoke(Event event) {
@@ -319,29 +252,9 @@ public class ComputeNode implements Node {
         this.taskProcessor.handleAveragesCalculated(averagesCalculated);
     }
 
-    private void sendMessages(int numberOfRounds) {
-        MessagePassingThread messagePassingThread = new MessagePassingThread(this, numberOfRounds);
-        Thread thread = new Thread(messagePassingThread);
-        thread.start();
-    }
-
-    public void listPartners() {
-        System.out.println(getPartnerNodesString());
-    }
-
-    private String getPartnerNodesString() {
-        String str = "{\n";
-        for (String key : this.partnerNodes.keySet()) {
-            PartnerNodeRef partnerNodeRef = this.partnerNodes.get(key);
-            str += "\t" + this.ipAddress + ":" + this.portNumber + " -- " + partnerNodeRef.getLinkWeight() + " --> " + key + ", " + partnerNodeRef.getSocket() + "\n";
-        }
-        str += "}";
-        return str;
-    }
-
     @Override
     public String toString() {
-        return "\nMessagingNode\n---------------------\n" + this.getIpAddress() + ":" + this.getPortNumber() + "\nPartner Nods: " + getPartnerNodesString();
+        return "\nMessagingNode\n---------------------\n" + this.getIpAddress() + ":" + this.getPortNumber() + "\nPartner Node: " + this.partnerNode;
     }
 
     public void deregisterSelf() {
@@ -355,19 +268,10 @@ public class ComputeNode implements Node {
         }
     }
 
-    public void pokePartner(String partner) {
-        try {
-            Socket socket = this.partnerNodes.get(partner).getSocket();
-            TCPSender sender = new TCPSender(socket);
-            String message = "Hi from " + this.ipAddress + ":" + this.portNumber;
-            PartnerPoke poke = new PartnerPoke(message);
-            byte[] bytes = poke.getBytes();
-            sender.sendData(bytes);
-        } catch (IOException e) {
-            System.out.println("ERROR Trying to poke partner " + e);
-        } catch (NullPointerException e) {
-            System.out.println("No socket to " + partner);
-        }
+    public void pokePartner() {
+        String message = "Hi from " + this.ipAddress + ":" + this.portNumber;
+        PartnerPoke poke = new PartnerPoke(message);
+        this.partnerNode.writeToSocket(poke);
     }
 
     public static void main(String[] args) {

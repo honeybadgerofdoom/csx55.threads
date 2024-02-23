@@ -30,7 +30,7 @@ public class TaskProcessor implements Runnable {
 
     public void run() {
         System.out.println("Starting " + this.numberOfRounds + " rounds");
-        PartnerNodeRef partnerNodeRef = this.node.getOneNeighbor();
+        PartnerNodeRef partnerNodeRef = this.node.getPartnerNode();
         this.taskManagerList = new ArrayList<>();
 
         for (int i = 0; i < this.numberOfRounds; i++) {
@@ -140,8 +140,8 @@ public class TaskProcessor implements Runnable {
             this.allAveragesCalculated = true;
         }
         else if (myAveragesAreAllCalculated) {
-            String lastNode = averagesCalculated.processRelay(this.node.getId());
-            relay(lastNode, averagesCalculated);
+            averagesCalculated.processRelay(this.node.getId());
+            this.node.getPartnerNode().writeToSocket(averagesCalculated);
         }
         else {
             this.averagesCalculatedDeque.add(averagesCalculated);
@@ -149,21 +149,13 @@ public class TaskProcessor implements Runnable {
     }
 
     private void relayTaskAverage(TaskManager taskManager, TaskAverage taskAverage) {
-        String lastNode = taskAverage.processRelay(this.node.getId(), taskManager.getInitialNumberOfTasks());
-        relay(lastNode, taskAverage);
+        taskAverage.processRelay(this.node.getId(), taskManager.getInitialNumberOfTasks());
+        this.node.getPartnerNode().writeToSocket(taskAverage);
     }
 
     private void relayTaskDelivery(TaskDelivery taskDelivery) {
-        String lastNode = taskDelivery.processRelay(this.node.getId());
-        relay(lastNode, taskDelivery);
-    }
-
-    private void relay(String lastNode, Event event) {
-        for (String key : this.node.getPartnerNodes().keySet()) {
-            if (key.equals(lastNode)) continue;
-            PartnerNodeRef relayTarget = this.node.getPartnerNodes().get(key);
-            relayTarget.writeToSocket(event);
-        }
+        taskDelivery.processRelay(this.node.getId());
+        this.node.getPartnerNode().writeToSocket(taskDelivery);
     }
 
     public void printTaskManagerStats() {

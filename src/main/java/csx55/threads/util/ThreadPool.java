@@ -3,11 +3,8 @@ package csx55.threads.util;
 import csx55.threads.hashing.Task;
 import csx55.threads.ComputeNode;
 import csx55.threads.transport.TCPSender;
-import csx55.threads.wireformats.TaskReport;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ThreadPool {
@@ -47,17 +44,6 @@ public class ThreadPool {
         for (int i = 0; i < numTasks; i++) {
             Task task = new Task(this.node.getIpAddress(), this.node.getPortNumber(), round, this.node.getRng().nextInt());
             this.taskQueue.add(task);
-        }
-    }
-
-    public synchronized void sendTaskDataToRegistry(Task task) {
-        String data = task.toString();
-        TaskReport taskReport = new TaskReport(data);
-        try {
-            byte[] bytes = taskReport.getBytes();
-            sender.sendData(bytes);
-        } catch (IOException e) {
-            System.out.println("Failed to send task data " + e);
         }
     }
 
