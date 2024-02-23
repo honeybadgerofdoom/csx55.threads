@@ -37,13 +37,11 @@ public class TaskProcessor implements Runnable {
 
     public void run() {
         System.out.println("Starting " + this.numberOfRounds + " rounds");
-//        waitForNodeAgreement(roundsAgreementSpace);
-
-
+//        waitOnDistributedBarrier(roundsAgreementSpace);
         initializeTaskManagers();
-        waitForNodeAgreement(taskManagerAgreementSpace);
+        waitOnDistributedBarrier(taskManagerAgreementSpace);
         getAverages();
-        waitForNodeAgreement(averagesAgreementSpace);
+        waitOnDistributedBarrier(averagesAgreementSpace);
         sendLoadBalancingMessages();
 //        roundsAgreementSpace.reset();
 //        taskManagerAgreementSpace.reset();
@@ -76,7 +74,7 @@ public class TaskProcessor implements Runnable {
         }
     }
 
-    private void waitForNodeAgreement(AgreementSpace agreementSpace) {
+    private void waitOnDistributedBarrier(AgreementSpace agreementSpace) {
         int agreementPolicy = agreementSpace.getAgreementPolicy();
         agreementSpace.setIAmReady(true);
         while (!this.nodeAgreementDeque.isEmpty()) {
@@ -156,22 +154,35 @@ public class TaskProcessor implements Runnable {
         // Get the correct AgreementSpace instance
         int agreementPolicy = nodeAgreement.getAgreement();
         AgreementSpace agreementSpace;
-        if (agreementPolicy == Protocol.AGR_TASK_MANAGERS) agreementSpace = taskManagerAgreementSpace;
-        else agreementSpace = averagesAgreementSpace;
-
-        // If I sent this, everyone has agreed
-        if (nodeAgreement.iSentThisMessage(this.node.getId())) {
-            agreementSpace.setAllAreReady(true);
+        switch (agreementPolicy) {
+            case Protocol.AGR_ROUNDS:
+                agreementSpace = roundsAgreementSpace;
+                break;
+            case Protocol.AGR_TASK_MANAGERS:
+                agreementSpace = taskManagerAgreementSpace;
+                break;
+            case Protocol.AGR_AVERAGE:
+                agreementSpace = averagesAgreementSpace;
+                break;
+            default:
+                agreementSpace = null;
         }
 
-        // If I am ready, relay this message
-        else if (agreementSpace.amIReady()) {
-            this.node.getPartnerNode().writeToSocket(nodeAgreement);
-        }
+        if (agreementSpace != null) {
+            // If I sent this, everyone has agreed
+            if (nodeAgreement.iSentThisMessage(this.node.getId())) {
+                agreementSpace.setAllAreReady(true);
+            }
 
-        // I am not ready yet, push this message into my nodeAgreementDeque
-        else {
-            this.nodeAgreementDeque.add(nodeAgreement);
+            // If I am ready, relay this message
+            else if (agreementSpace.amIReady()) {
+                this.node.getPartnerNode().writeToSocket(nodeAgreement);
+            }
+
+            // I am not ready yet, push this message into my nodeAgreementDeque
+            else {
+                this.nodeAgreementDeque.add(nodeAgreement);
+            }
         }
 
     }
