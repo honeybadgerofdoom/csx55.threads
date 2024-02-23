@@ -13,7 +13,6 @@ public class Protocol {
     public static final int POKE = 13;
     public static final int TASK_AVERAGE = 14;
     public static final int TASK_DELIVERY = 15;
-    public static final int AVERAGES_CALCULATED = 17;
     public static final int NODE_AGREEMENT = 18;
 
     // status codes
@@ -21,6 +20,6 @@ public class Protocol {
     public static final byte FAILURE = 0;
 
     public static final int AGR_AVERAGE = 0;
-    public static final int AGR_READY = 1;
+    public static final int AGR_TASK_MANAGERS = 1;
 
 }

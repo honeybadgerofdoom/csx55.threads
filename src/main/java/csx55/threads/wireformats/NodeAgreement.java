@@ -62,4 +62,9 @@ public class NodeAgreement implements Event {
         return marshalledBytes;
     }
 
+    @Override
+    public String toString() {
+        return "NodeAgreement from source: " + sourceNode;
+    }
+
 }
