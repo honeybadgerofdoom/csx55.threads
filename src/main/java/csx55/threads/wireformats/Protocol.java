@@ -9,19 +9,17 @@ public class Protocol {
     public static final int DEREGISTER_RESPONSE = 4;
     public static final int MESSAGING_NODES_LIST = 5;
     public static final int TASK_INITIATE = 6;
-    public static final int TASK_COMPLETE = 7;
-    public static final int PULL_TRAFFIC_SUMMARY = 8;
     public static final int TRAFFIC_SUMMARY = 9;
-    public static final int LINK_WEIGHTS = 10;
-    public static final int PARTNER_CONNECTION_REQUEST = 11;
-    public static final int MESSAGE = 12;
     public static final int POKE = 13;
     public static final int TASK_AVERAGE = 14;
     public static final int TASK_DELIVERY = 15;
-    public static final int TASK_REPORT = 16;
-    public static final int AVERAGES_CALCULATED = 17;
-    
+    public static final int NODE_AGREEMENT = 18;
+
     // status codes
     public static final byte SUCCESS = 1;
     public static final byte FAILURE = 0;
+
+    public static final int AGR_AVERAGE = 0;
+    public static final int AGR_TASK_MANAGERS = 1;
+
 }

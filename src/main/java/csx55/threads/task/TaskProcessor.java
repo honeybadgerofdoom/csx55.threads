@@ -2,85 +2,95 @@ package csx55.threads.task;
 
 import csx55.threads.ComputeNode;
 import csx55.threads.node.PartnerNodeRef;
-import csx55.threads.wireformats.AveragesCalculated;
-import csx55.threads.wireformats.RoundAverage;
-import csx55.threads.wireformats.TaskDelivery;
+import csx55.threads.util.AgreementSpace;
+import csx55.threads.wireformats.*;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TaskProcessor implements Runnable {
 
     private final ComputeNode node;
-    private final int numberOfRounds;
+    private int numberOfRounds;
     private List<TaskManager> taskManagerList;
-    private boolean allAveragesCalculated = false;
-    private final Deque<AveragesCalculated> averagesCalculatedDeque;
-    private boolean myAveragesAreAllCalculated = false;
+    private final ConcurrentLinkedQueue<NodeAgreement> nodeAgreementDeque;
+    private final AgreementSpace taskManagerAgreementSpace;
+    private final AgreementSpace averagesAgreementSpace;
 
-    public TaskProcessor(ComputeNode node, int numberOfRounds) {
+    public TaskProcessor(ComputeNode node) {
+        System.out.println("TaskProcessor is instantiated.");
         this.node = node;
+        this.nodeAgreementDeque = new ConcurrentLinkedQueue<>();
+        this.taskManagerAgreementSpace = new AgreementSpace(Protocol.AGR_TASK_MANAGERS);
+        this.averagesAgreementSpace = new AgreementSpace(Protocol.AGR_AVERAGE);
+    }
+
+    public void setNumberOfRounds(int numberOfRounds) {
+        System.out.println("Setting number of rounds to " + numberOfRounds);
         this.numberOfRounds = numberOfRounds;
-        this.averagesCalculatedDeque = new ArrayDeque<>();
     }
 
     public void run() {
         System.out.println("Starting " + this.numberOfRounds + " rounds");
-        PartnerNodeRef partnerNodeRef = this.node.getPartnerNode();
-        this.taskManagerList = new ArrayList<>();
+        initializeTaskManagers();
+        waitForNodeAgreement(taskManagerAgreementSpace);
+        getAverages();
+        waitForNodeAgreement(averagesAgreementSpace);
+        sendLoadBalancingMessages();
+    }
 
+    private void sendLoadBalancingMessages() {
+        for (int i = 0; i < this.numberOfRounds; i++) {
+            balanceLoad(i);
+        }
+    }
+
+    private void initializeTaskManagers() {
+        this.taskManagerList = new ArrayList<>();
         for (int i = 0; i < this.numberOfRounds; i++) {
             TaskManager taskManager = new TaskManager(this.node.getRng(), this.node.getThreadPool(), i, this.node.getTrafficStats());
             this.taskManagerList.add(taskManager);
         }
+    }
 
-        // FIXME We need to wait until these are all instantiated. Find a better way that sleep() - just use a message like AveragesCalculated...
-        try {
-            Thread.sleep(50);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-
+    private void getAverages() {
         for (int i = 0; i < this.numberOfRounds; i++) {
-            getTaskAverage(partnerNodeRef, i);
+            getTaskAverage(i);
         }
-
         for (TaskManager taskManager : this.taskManagerList) {
             while (!taskManager.averageIsSet()) {
                 Thread.onSpinWait();
             }
             taskManager.startInitialTasks();
         }
+    }
 
-        // Wait until all nodes have calculated all their averages
-        this.myAveragesAreAllCalculated = true;
-        while (!this.averagesCalculatedDeque.isEmpty()) {
-            AveragesCalculated averagesCalculated = this.averagesCalculatedDeque.poll();
-            handleAveragesCalculated(averagesCalculated);
+    private void waitForNodeAgreement(AgreementSpace agreementSpace) {
+        int agreementPolicy = agreementSpace.getAgreementPolicy();
+        agreementSpace.setIAmReady(true);
+        while (!this.nodeAgreementDeque.isEmpty()) {
+            NodeAgreement nodeAgreement = this.nodeAgreementDeque.poll();
+            if (nodeAgreement.getAgreement() == agreementPolicy) {
+                handleNodeAgreement(nodeAgreement);
+            }
         }
-        AveragesCalculated averagesCalculated = new AveragesCalculated(this.node.getId());
-        partnerNodeRef.writeToSocket(averagesCalculated);
-
-        while (!this.allAveragesCalculated) {
+        NodeAgreement nodeAgreement = new NodeAgreement(agreementPolicy, this.node.getId());
+        this.node.getPartnerNode().writeToSocket(nodeAgreement);
+        while (!agreementSpace.areAllReady()) {
             Thread.onSpinWait();
         }
-
-        // Load balancing
-        for (int i = 0; i < this.numberOfRounds; i++) {
-            balanceLoad(partnerNodeRef, i);
-        }
-
     }
 
-    private void getTaskAverage(PartnerNodeRef partnerNodeRef, int iteration) {
+    private void getTaskAverage(int iteration) {
         TaskManager taskManager = this.taskManagerList.get(iteration);
         RoundAverage roundAverage = new RoundAverage(taskManager.getCurrentNumberOfTasks(), this.node.getId(), iteration);
-        partnerNodeRef.writeToSocket(roundAverage);
+        this.node.getPartnerNode().writeToSocket(roundAverage);
     }
 
-    private void balanceLoad(PartnerNodeRef partnerNodeRef, int iteration) {
+    private void balanceLoad(int iteration) {
 
         // Get the correct TaskManager instance
         TaskManager taskManager = this.taskManagerList.get(iteration);
@@ -89,7 +99,7 @@ public class TaskProcessor implements Runnable {
         if (taskManager.shouldGiveTasks()) {
             TaskDelivery taskDelivery = new TaskDelivery(taskManager.getTaskDiff(), this.node.getId(), iteration);
             taskManager.giveTasks();
-            partnerNodeRef.writeToSocket(taskDelivery);
+            this.node.getPartnerNode().writeToSocket(taskDelivery);
         }
 
     }
@@ -133,17 +143,29 @@ public class TaskProcessor implements Runnable {
 
     }
 
-    public void handleAveragesCalculated(AveragesCalculated averagesCalculated) {
-        if (averagesCalculated.nodeIsFirst(this.node.getId())) {
-            this.allAveragesCalculated = true;
+    public void handleNodeAgreement(NodeAgreement nodeAgreement) {
+
+        // Get the correct AgreementSpace instance
+        int agreementPolicy = nodeAgreement.getAgreement();
+        AgreementSpace agreementSpace;
+        if (agreementPolicy == Protocol.AGR_TASK_MANAGERS) agreementSpace = taskManagerAgreementSpace;
+        else agreementSpace = averagesAgreementSpace;
+
+        // If I sent this, everyone has agreed
+        if (nodeAgreement.iSentThisMessage(this.node.getId())) {
+            agreementSpace.setAllAreReady(true);
         }
-        else if (myAveragesAreAllCalculated) {
-            averagesCalculated.processRelay(this.node.getId());
-            this.node.getPartnerNode().writeToSocket(averagesCalculated);
+
+        // If I am ready, relay this message
+        else if (agreementSpace.amIReady()) {
+            this.node.getPartnerNode().writeToSocket(nodeAgreement);
         }
+
+        // I am not ready yet, push this message into my nodeAgreementDeque
         else {
-            this.averagesCalculatedDeque.add(averagesCalculated);
+            this.nodeAgreementDeque.add(nodeAgreement);
         }
+
     }
 
     private void relayTaskAverage(TaskManager taskManager, RoundAverage roundAverage) {

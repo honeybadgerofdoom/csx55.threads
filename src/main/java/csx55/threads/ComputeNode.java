@@ -44,6 +44,7 @@ public class ComputeNode implements Node {
         assignIpAddress();
         assignServerSocketAndPort();
         startTCPServerThread();
+        this.taskProcessor = new TaskProcessor(this);
         connectToRegistry(this.registryIpAddress, this.registryPortNumber);
         registerSelf();
         manageCLI();
@@ -166,8 +167,8 @@ public class ComputeNode implements Node {
                 case (Protocol.TASK_DELIVERY):
                     handleTaskDelivery(event);
                     break;
-                case (Protocol.AVERAGES_CALCULATED):
-                    handleAveragesCalculated(event);
+                case (Protocol.NODE_AGREEMENT):
+                    handleNodeAgreement(event);
                     break;
                 default:
                     System.out.println("onEvent couldn't handle event type " + type);
@@ -210,7 +211,7 @@ public class ComputeNode implements Node {
         setupThreadPool();
         this.threadPool.startThreadPool();
         int numberOfRounds = ((TaskInitiate) event).getRounds();
-        this.taskProcessor = new TaskProcessor(this, numberOfRounds);
+        this.taskProcessor.setNumberOfRounds(numberOfRounds);
         Thread thread = new Thread(this.taskProcessor);
         thread.start();
     }
@@ -238,9 +239,9 @@ public class ComputeNode implements Node {
         this.taskProcessor.handleTaskDelivery(taskDelivery);
     }
 
-    private void handleAveragesCalculated(Event event) {
-        AveragesCalculated averagesCalculated = (AveragesCalculated) event;
-        this.taskProcessor.handleAveragesCalculated(averagesCalculated);
+    private void handleNodeAgreement(Event event) {
+        NodeAgreement nodeAgreement = (NodeAgreement) event;
+        this.taskProcessor.handleNodeAgreement(nodeAgreement);
     }
 
     public void deregisterSelf() {
