@@ -5,10 +5,10 @@ import java.util.*;
 
 public class MessagingNodesList implements Event {
 
-    private int messageType = Protocol.MESSAGING_NODES_LIST;
-    private int numberOfPeerMessagingNodes;
-    private List<String> info;
-    private int numberOfThreads;
+    private final int messageType = Protocol.MESSAGING_NODES_LIST;
+    private final int numberOfPeerMessagingNodes;
+    private final List<String> info;
+    private final int numberOfThreads;
 
     public MessagingNodesList(List<String> info, int numberOfThreads) {
         this.numberOfPeerMessagingNodes = info.size();
