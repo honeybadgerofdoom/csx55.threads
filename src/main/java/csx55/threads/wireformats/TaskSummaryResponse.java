@@ -1,7 +1,5 @@
 package csx55.threads.wireformats;
 
-import csx55.threads.util.TableHelper;
-
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -17,7 +15,6 @@ public class TaskSummaryResponse implements Event {
     private final String ipAddress;
     private final int portNumber;
     private final int generated, pushed, pulled, completed;
-    private final TableHelper tableHelper = new TableHelper(12, 4);
     private final DecimalFormat df = new DecimalFormat("#.##########");
 
     public TaskSummaryResponse(String ipAddress, int portNumber, int generated, int pushed, int pulled, int completed) {
@@ -48,11 +45,6 @@ public class TaskSummaryResponse implements Event {
 
         bArrayInputStream.close();
         din.close();
-    }
-
-    public String formatTable() {
-        String header = String.format("| %10s | %10s | %10s | %10s |", "Generated", "Pushed", "Pulled", "Completed");
-        return this.tableHelper.formatTable(header, this.toString());
     }
 
     @Override

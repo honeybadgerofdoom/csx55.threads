@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.io.*;
 
-public class TaskAverage implements Event {
+public class RoundAverage implements Event {
 
     private int messageType = Protocol.TASK_AVERAGE;
     private int sum;
@@ -12,7 +12,7 @@ public class TaskAverage implements Event {
     private List<String> nodeIds;
     private int iteration;
 
-    public TaskAverage(int numberOfTasks, String id, int iteration) {
+    public RoundAverage(int numberOfTasks, String id, int iteration) {
         this.sum = numberOfTasks;
         this.numberOfNodes = 1;
         this.nodeIds = new ArrayList<>();
@@ -20,7 +20,7 @@ public class TaskAverage implements Event {
         this.iteration = iteration;
     }
 
-    public TaskAverage(byte[] bytes) throws IOException {
+    public RoundAverage(byte[] bytes) throws IOException {
         ByteArrayInputStream bArrayInputStream = new ByteArrayInputStream(bytes);
         DataInputStream din = new DataInputStream(new BufferedInputStream(bArrayInputStream));
 

@@ -4,13 +4,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import csx55.threads.cli.RegistryCLIManager;
 import csx55.threads.node.Node;
 import csx55.threads.transport.TCPSender;
-import csx55.threads.util.EventAndSocket;
-import csx55.threads.util.OverlayCreator;
 import csx55.threads.wireformats.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -20,8 +17,6 @@ public class Registry implements Node {
     private final int portNumber;
     private ServerSocket serverSocket;
     private final ConcurrentHashMap<String, Socket> registryNodes;
-    private OverlayCreator overlayCreator;
-    private ConcurrentLinkedQueue<EventAndSocket> eventQueue;
     private ConcurrentHashMap<String, TaskSummaryResponse> taskResponseMap;
     private int numberOfDoneNodes = 0;
     private int taskSummariesCollected = 0;
@@ -39,17 +34,6 @@ public class Registry implements Node {
         startTCPServerThread();
         manageCLI();
         initializeOutputMaps();
-    }
-
-    private boolean checkDoneNodesNumber() {
-        try {
-            this.doneNodesLock.lock();
-            this.numberOfDoneNodes++;
-        } catch (Exception ignored) {
-        } finally {
-            this.doneNodesLock.unlock();
-        }
-        return this.numberOfDoneNodes == registryNodes.size();
     }
 
     private boolean checkTaskSummariesNumber() {
@@ -84,10 +68,6 @@ public class Registry implements Node {
         }
     }
 
-    public ConcurrentLinkedQueue<EventAndSocket> getEventQueue() {
-        return this.eventQueue;
-    }
-
     public int getPortNumber() {
         return this.portNumber;
     }
@@ -95,10 +75,6 @@ public class Registry implements Node {
     public ServerSocket getServerSocket() {
         return this.serverSocket;
     }
-
-    public void addEventToThreadPool(Event event, Socket socket) {
-        this.eventQueue.add(new EventAndSocket(event, socket));
-    };
 
     public void onEvent(Event event, Socket socket) {
         switch (event.getType()) {
@@ -108,26 +84,15 @@ public class Registry implements Node {
             case (Protocol.DEREGISTER_REQUEST):
                 handleDeregisterRequest(event, socket);
                 break;
-            case (Protocol.TASK_COMPLETE):
-                handleTaskComplete();
-                break;
             case (Protocol.TRAFFIC_SUMMARY):
                 handleTrafficSummary(event);
                 break;
-            case (Protocol.TASK_REPORT):
-                handleTaskReport(event);
-                break;
             default:
-                System.out.println("onEvent trying to process invalid evernt type: " + event.getType());
+                System.out.println("onEvent trying to process invalid event type: " + event.getType());
         }
     }
 
     private synchronized void handleRegisterRequest(Event event, Socket socket) {
-        /*
-         * TODO
-         *  - 'When a registry receives a request, ... ensures the IP address in the message matches the address where the request originated.'
-         *  - Throw an error if the above condition is not met
-         * */
         String additionalInfo = "Register request unsuccessful. MessagingNode is already in the registry.";
         byte statusCode = Protocol.FAILURE;
         String mapKey = ((RegisterRequest) event).getIpAddress() + ":" + ((RegisterRequest) event).getPortNumber();
@@ -147,11 +112,6 @@ public class Registry implements Node {
     }
 
     private synchronized void handleDeregisterRequest(Event event, Socket socket) {
-        /*
-         * TODO
-         *  - 'When a registry receives a request, ... ensures the IP address in the message matches the address where the request originated.'
-         *  - Throw an error if the above condition is not met
-         * */
         byte statusCode = Protocol.FAILURE;
         String mapKey = ((DeregisterRequest) event).getIpAddress() + ":" + ((DeregisterRequest) event).getPortNumber();
         if (this.registryNodes.containsKey(mapKey)) {
@@ -168,12 +128,6 @@ public class Registry implements Node {
         }
     }
 
-    private synchronized void handleTaskComplete() {
-        if (checkDoneNodesNumber()) {
-            sendPullTrafficSummaryMessage();
-        }
-    }
-
     private synchronized void handleTrafficSummary(Event event) {
         String ipAddress = ((TaskSummaryResponse) event).getIpAddress();
         int port = ((TaskSummaryResponse) event).getPortNumber();
@@ -186,11 +140,6 @@ public class Registry implements Node {
             this.numberOfDoneNodes = 0;
             this.taskSummariesCollected = 0;
         }
-    }
-
-    private void handleTaskReport(Event event) {
-        TaskReport taskReport = (TaskReport) event;
-        System.out.println(taskReport.getData());
     }
 
     private void printFinalOutput() {
@@ -246,27 +195,6 @@ public class Registry implements Node {
         System.out.println(tableLine);
     }
 
-    private void sendPullTrafficSummaryMessage() {
-        int numSeconds = 15;
-        System.out.println("All nodes done sending messages, waiting for " + numSeconds + "s to send TaskSummaryRequest...");
-        try {
-            Thread.sleep(numSeconds * 1000);
-        } catch (InterruptedException e) {
-            System.out.println("INTERRUPTED While waiting before sending PullTrafficSummary " + e);
-        }
-        TaskSummaryRequest taskSummaryRequest = new TaskSummaryRequest();
-        System.out.println(numSeconds + "s elapsed, sending TaskSummaryRequest");
-        try {
-            byte[] bytes = taskSummaryRequest.getBytes();
-            for (Socket socket : this.registryNodes.values()) {
-                TCPSender sender = new TCPSender(socket);
-                sender.sendData(bytes);
-            }
-        } catch (IOException e) {
-            System.out.println("ERROR Trying to send PullTrafficSummary");
-        }
-    }
-
     public void setupOverlay(int numberOfThreads) {
         this.numberOfThreads = numberOfThreads;
         createOverlay();
@@ -274,27 +202,20 @@ public class Registry implements Node {
 
     private void createOverlay() {
         List<String> nodes = new ArrayList<>(this.registryNodes.keySet());
-        this.overlayCreator = new OverlayCreator(nodes, this.numberOfThreads);
-        this.overlayCreator.createOverlay();
-        sendMessagingNodesListToNodes();
-    }
-
-    public void printOverlay() {
-        this.overlayCreator.printOverlay();
-    }
-
-    public void printMatrix() {
-        this.overlayCreator.printMatrix();
-    }
-
-    private void sendMessagingNodesListToNodes() {
-        Map<String, MessagingNodesList> messagingNodesListMap = this.overlayCreator.overlayToMessagingNodesListMap();
-        for (String key : messagingNodesListMap.keySet()) {
+        for (int i = 0; i < nodes.size(); i++) {
+            String key = nodes.get(i);
+            String partnerNode;
+            if (i < nodes.size() - 1) {
+                partnerNode = nodes.get(i+1);
+            }
+            else {
+                partnerNode = nodes.get(0);
+            }
+            PartnerNodeInfo partnerNodeInfo = new PartnerNodeInfo(partnerNode, this.numberOfThreads);
             Socket socket = this.registryNodes.get(key);
-            MessagingNodesList messagingNodesList = messagingNodesListMap.get(key);
             try {
                 TCPSender sender = new TCPSender(socket);
-                byte[] bytes = messagingNodesList.getBytes();
+                byte[] bytes = partnerNodeInfo.getBytes();
                 sender.sendData(bytes);
             } catch (IOException e) {
                 System.out.println("Failed to build TCPSender for MessagingNodesList");
@@ -308,7 +229,7 @@ public class Registry implements Node {
         }
     }
 
-    public void initiateMessagePassing(int numberOfRounds) {
+    public void start(int numberOfRounds) {
         TaskInitiate taskInitiateMessage = new TaskInitiate(numberOfRounds);
         sendToAllNodes(taskInitiateMessage);
     }

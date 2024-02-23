@@ -9,12 +9,10 @@ import java.net.Socket;
 public class PartnerNodeRef {
 
     private Socket socket;
-    private int linkWeight;
     private TCPSender tcpSender;
 
-    public PartnerNodeRef(Socket socket, int linkWeight) {
+    public PartnerNodeRef(Socket socket) {
         this.socket = socket;
-        this.linkWeight = linkWeight;
         initializeTCPSender(socket);
     }
 
@@ -39,17 +37,9 @@ public class PartnerNodeRef {
         return socket;
     }
 
-    public int getLinkWeight() {
-        return linkWeight;
-    }
-
-    public void setLinkWeight(int linkWeight) {
-        this.linkWeight = linkWeight;
-    }
-
     @Override
     public String toString() {
-        return socket + " " + linkWeight;
+        return socket.toString();
     }
 
 }

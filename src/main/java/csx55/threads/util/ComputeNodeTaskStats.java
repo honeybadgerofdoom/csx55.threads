@@ -1,11 +1,10 @@
 package csx55.threads.util;
 
-public class TrafficStats {
+public class ComputeNodeTaskStats {
 
     private Integer generated, pushed, pulled, completed;
-    private final TableHelper tableHelper = new TableHelper(12, 4);
 
-    public TrafficStats() {
+    public ComputeNodeTaskStats() {
         generated = 0;
         pushed = 0;
         pulled = 0;
@@ -63,11 +62,6 @@ public class TrafficStats {
 
     public Integer getCompleted() {
         return completed;
-    }
-
-    public String table() {
-        String header = String.format("| %10s | %10s | %10s | %10s |", "Generated", "Pushed", "Pulled", "Completed");
-        return this.tableHelper.formatTable(header, this.toString());
     }
 
     @Override
