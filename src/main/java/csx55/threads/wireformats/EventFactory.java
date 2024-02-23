@@ -42,6 +42,8 @@ public class EventFactory {
                 return new TaskDelivery(bytes);
             case (Protocol.AVERAGES_CALCULATED):
                 return new AveragesCalculated(bytes);
+            case (Protocol.NODE_AGREEMENT):
+                return new NodeAgreement(bytes);
             default:
                 System.out.println("getEvent() found no matching route, messageType: " + messageType);
                 return null;

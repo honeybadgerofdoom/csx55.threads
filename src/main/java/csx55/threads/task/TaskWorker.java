@@ -23,7 +23,7 @@ public class TaskWorker implements Runnable {
         ConcurrentLinkedQueue<Task> taskQueue = threadPool.getTaskQueue();
 
         while (taskQueue.isEmpty()) {
-            Thread.onSpinWait();
+//            Thread.onSpinWait();
         }
         while (!taskQueue.isEmpty()) {
             Task task = taskQueue.poll();

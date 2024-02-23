@@ -169,6 +169,9 @@ public class ComputeNode implements Node {
                 case (Protocol.AVERAGES_CALCULATED):
                     handleAveragesCalculated(event);
                     break;
+                case (Protocol.NODE_AGREEMENT):
+                    handleNodeAgreement(event);
+                    break;
                 default:
                     System.out.println("onEvent couldn't handle event type " + type);
             }
@@ -241,6 +244,11 @@ public class ComputeNode implements Node {
     private void handleAveragesCalculated(Event event) {
         AveragesCalculated averagesCalculated = (AveragesCalculated) event;
         this.taskProcessor.handleAveragesCalculated(averagesCalculated);
+    }
+
+    private void handleNodeAgreement(Event event) {
+        NodeAgreement nodeAgreement = (NodeAgreement) event;
+        this.taskProcessor.handleNodeAgreement(nodeAgreement);
     }
 
     public void deregisterSelf() {
