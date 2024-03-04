@@ -130,6 +130,13 @@ public class TaskDelivery implements Event {
 
         dout.writeInt(this.iteration);
 
+        for (Task task : this.taskList) {
+            byte[] taskBytes = task.toBytes();
+            int elementLength = taskBytes.length;
+            dout.writeInt(elementLength);
+            dout.write(taskBytes);
+        }
+
         dout.flush();
         marshalledBytes = baOutputStream.toByteArray();
         baOutputStream.close();
