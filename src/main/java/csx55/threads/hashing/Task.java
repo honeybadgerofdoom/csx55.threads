@@ -1,10 +1,7 @@
 package csx55.threads.hashing;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.io.*;
 
 public class Task {
     private final String ip;
@@ -79,6 +76,30 @@ public class Task {
 
     public String toString() {
         return ip + ":" + port + ":" + roundNumber + ":" + payload + ":" + timestamp + ":" + threadId + ":" + nonce;
+    }
+
+    public byte[] getBytes() throws IOException {
+        byte[] marshalledBytes = null;
+        ByteArrayOutputStream baOutputStream = new ByteArrayOutputStream();
+        DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
+
+        byte[] ipBytes = ip.getBytes();
+        int elementLength = ipBytes.length;
+        dout.writeInt(elementLength);
+        dout.write(ipBytes);
+
+        dout.writeInt(port);
+        dout.writeInt(roundNumber);
+        dout.writeInt(payload);
+        dout.writeLong(timestamp);
+        dout.writeLong(threadId);
+        dout.writeInt(nonce);
+
+        dout.flush();
+        marshalledBytes = baOutputStream.toByteArray();
+        baOutputStream.close();
+        dout.close();
+        return marshalledBytes;
     }
 
     public byte[] toBytes() {

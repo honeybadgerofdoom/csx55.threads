@@ -44,8 +44,6 @@ public class TaskManager {
             int tasksTaken = taskDelivery.takeTasks(this.taskDiff);
             this.computeNodeTaskStats.updatePulled(tasksTaken);
             this.currentNumberOfTasks += tasksTaken;
-//            String nodeId = taskDelivery.getOriginNode();
-//            pushTasksToThreadPool(tasksTaken, nodeId);
             List<Task> takenTasks = taskDelivery.receiveTasks(tasksTaken);
             pushTasksToThreadPool(takenTasks);
             updateTaskDiff();
