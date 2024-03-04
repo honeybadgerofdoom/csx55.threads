@@ -83,16 +83,9 @@ public class TaskDelivery implements Event {
     }
 
     public synchronized List<Task> receiveTasks(int tasksTaken) {
-        List<Task> takenTasks = new ArrayList<>();
-        List<Task> newTaskList = new ArrayList<>();
-        int i = 0;
-        for (; i < tasksTaken; i++) {
-            takenTasks.add(this.taskList.get(i));
-        }
-        for (; i < this.taskList.size(); i++) {
-            newTaskList.add(this.taskList.get(i));
-        }
-        this.taskList = newTaskList;
+        List<Task> takenTasks = this.taskList.subList(0, tasksTaken);
+        if (tasksTaken < this.taskList.size()) this.taskList = this.taskList.subList(tasksTaken, this.taskList.size());
+        else this.taskList = new ArrayList<>();
         return takenTasks;
     }
 
