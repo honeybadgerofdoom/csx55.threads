@@ -1,5 +1,9 @@
 package csx55.threads.hashing;
 
+import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 public class Task {
@@ -19,6 +23,22 @@ public class Task {
         this.timestamp = 0L;
         this.threadId = 0L;
         this.nonce = 0;
+    }
+
+    public Task(byte[] bytes) throws IOException {
+        ByteArrayInputStream bArrayInputStream = new ByteArrayInputStream(bytes);
+        DataInputStream din = new DataInputStream(new BufferedInputStream(bArrayInputStream));
+
+        int ipLength = din.readInt();
+        byte[] ipBytes = new byte[ipLength];
+        din.readFully(ipBytes);
+        this.ip = new String(ipBytes);
+        this.port = din.readInt();
+        this.roundNumber = din.readInt();
+        this.payload = din.readInt();
+        this.timestamp = din.readLong();
+        this.threadId = din.readLong();
+        this.nonce = din.readInt();
     }
 
     public void setTimestamp() {

@@ -1,8 +1,11 @@
 package csx55.threads.task;
 
+import csx55.threads.hashing.Task;
 import csx55.threads.threadPool.ThreadPool;
 import csx55.threads.util.ComputeNodeTaskStats;
 import csx55.threads.wireformats.TaskDelivery;
+
+import java.util.List;
 import java.util.Random;
 
 public class TaskManager {
@@ -41,8 +44,10 @@ public class TaskManager {
             int tasksTaken = taskDelivery.takeTasks(this.taskDiff);
             this.computeNodeTaskStats.updatePulled(tasksTaken);
             this.currentNumberOfTasks += tasksTaken;
-            String nodeId = taskDelivery.getOriginNode();
-            pushTasksToThreadPool(tasksTaken, nodeId);
+//            String nodeId = taskDelivery.getOriginNode();
+//            pushTasksToThreadPool(tasksTaken, nodeId);
+            List<Task> takenTasks = taskDelivery.receiveTasks(tasksTaken);
+            pushTasksToThreadPool(takenTasks);
             updateTaskDiff();
         }
     }
@@ -55,10 +60,12 @@ public class TaskManager {
     }
 
     // We gave tasks but there are some left. Start those.
-    public synchronized void absorbExcessTasks(int excessTasks) {
+    public synchronized void absorbExcessTasks(TaskDelivery taskDelivery) {
+        int excessTasks = taskDelivery.getNumTasks();
         this.currentNumberOfTasks += excessTasks;
         this.computeNodeTaskStats.absorb(excessTasks);
-        pushTasksToThreadPool(excessTasks);
+        List<Task> absorbedTasks = taskDelivery.absorbAll();
+        pushTasksToThreadPool(absorbedTasks);
         updateTaskDiff();
     }
 
@@ -79,6 +86,10 @@ public class TaskManager {
 
     private synchronized void pushTasksToThreadPool(int numTasks, String nodeId) {
         this.threadPool.addTasksToQueue(numTasks, this.round, nodeId);
+    }
+
+    private synchronized void pushTasksToThreadPool(List<Task> taskList) {
+        this.threadPool.addTasksToQueue(taskList);
     }
 
     public synchronized int getCurrentNumberOfTasks() {

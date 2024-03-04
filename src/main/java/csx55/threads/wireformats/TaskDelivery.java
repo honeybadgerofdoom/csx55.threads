@@ -1,5 +1,7 @@
 package csx55.threads.wireformats;
 
+import csx55.threads.hashing.Task;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.io.*;
@@ -11,13 +13,15 @@ public class TaskDelivery implements Event {
     private int numberOfNodes;
     private List<String> nodeIds;
     private int iteration;
+    private List<Task> taskList;
 
-    public TaskDelivery(int numberOfTasks, String id, int iteration) {
+    public TaskDelivery(int numberOfTasks, String id, int iteration, List<Task> taskList) {
         this.numTasks = numberOfTasks;
         this.numberOfNodes = 1;
         this.nodeIds = new ArrayList<>();
         this.nodeIds.add(id);
         this.iteration = iteration;
+        this.taskList = taskList;
     }
 
     public TaskDelivery(byte[] bytes) throws IOException {
@@ -38,6 +42,14 @@ public class TaskDelivery implements Event {
         }
 
         this.iteration = din.readInt();
+
+        this.taskList = new ArrayList<>();
+        for (int i = 0; i < this.numTasks; i++) {
+            int currentTaskLength = din.readInt();
+            byte[] currentTaskBytes = new byte[currentTaskLength];
+            din.readFully(currentTaskBytes);
+            this.taskList.add(new Task(currentTaskBytes));
+        }
 
         bArrayInputStream.close();
         din.close();
@@ -70,6 +82,27 @@ public class TaskDelivery implements Event {
         }
     }
 
+    public synchronized List<Task> receiveTasks(int tasksTaken) {
+        List<Task> takenTasks = new ArrayList<>();
+        List<Task> newTaskList = new ArrayList<>();
+        int i = 0;
+        for (; i < tasksTaken; i++) {
+            takenTasks.add(this.taskList.get(i));
+        }
+        for (; i < this.taskList.size(); i++) {
+            newTaskList.add(this.taskList.get(i));
+        }
+        this.taskList = newTaskList;
+        return takenTasks;
+    }
+
+    public synchronized List<Task> absorbAll() {
+        this.numTasks = 0;
+        List<Task> tasksToReturn = new ArrayList<>(this.taskList);
+        this.taskList = new ArrayList<>();
+        return tasksToReturn;
+    }
+
     public boolean nodeIsFirst(String id) {
         return id.equals(this.nodeIds.get(0));
     }
@@ -80,6 +113,10 @@ public class TaskDelivery implements Event {
 
     public int getIteration() {
         return this.iteration;
+    }
+
+    public List<Task> getTaskList() {
+        return taskList;
     }
 
     public byte[] getBytes() throws IOException {

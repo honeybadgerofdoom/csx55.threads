@@ -5,6 +5,7 @@ import csx55.threads.ComputeNode;
 import csx55.threads.transport.TCPSender;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ThreadPool {
@@ -45,6 +46,10 @@ public class ThreadPool {
             Task task = new Task(this.node.getIpAddress(), this.node.getPortNumber(), round, this.node.getRng().nextInt());
             this.taskQueue.add(task);
         }
+    }
+
+    public void addTasksToQueue(List<Task> taskList) {
+        this.taskQueue.addAll(taskList);
     }
 
     public ConcurrentLinkedQueue<Task> getTaskQueue() {

@@ -1,6 +1,7 @@
 package csx55.threads.task;
 
 import csx55.threads.ComputeNode;
+import csx55.threads.hashing.Task;
 import csx55.threads.node.PartnerNodeRef;
 import csx55.threads.util.AgreementSpace;
 import csx55.threads.wireformats.*;
@@ -97,7 +98,13 @@ public class TaskProcessor implements Runnable {
 
         // If we have too many tasks, send them around the ring in a TaskDelivery message
         if (taskManager.shouldGiveTasks()) {
-            TaskDelivery taskDelivery = new TaskDelivery(taskManager.getTaskDiff(), this.node.getId(), iteration);
+            int tasksToGive = taskManager.getTaskDiff();
+            List<Task> taskList = new ArrayList<>();
+            for (int i = 0; i < tasksToGive; i++) {
+                Task task = new Task(this.node.getIpAddress(), this.node.getPortNumber(), iteration, this.node.getRng().nextInt());
+                taskList.add(task);
+            }
+            TaskDelivery taskDelivery = new TaskDelivery(tasksToGive, this.node.getId(), iteration, taskList);
             taskManager.giveTasks();
             this.node.getPartnerNode().writeToSocket(taskDelivery);
         }
@@ -131,8 +138,8 @@ public class TaskProcessor implements Runnable {
 
         // If I originated this message. Absorb excess.
         if (taskDelivery.nodeIsFirst(this.node.getId())) {
-            int tasksLeft = taskDelivery.getNumTasks();
-            taskManager.absorbExcessTasks(tasksLeft);
+//            int tasksLeft = taskDelivery.getNumTasks();
+            taskManager.absorbExcessTasks(taskDelivery);
         }
 
         // If I didn't originate this message, relay it
