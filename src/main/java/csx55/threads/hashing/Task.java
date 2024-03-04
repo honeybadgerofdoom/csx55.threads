@@ -1,6 +1,7 @@
 package csx55.threads.hashing;
 
 import java.nio.charset.StandardCharsets;
+import java.io.*;
 
 public class Task {
     private final String ip;
@@ -19,6 +20,22 @@ public class Task {
         this.timestamp = 0L;
         this.threadId = 0L;
         this.nonce = 0;
+    }
+
+    public Task(byte[] bytes) throws IOException {
+        ByteArrayInputStream bArrayInputStream = new ByteArrayInputStream(bytes);
+        DataInputStream din = new DataInputStream(new BufferedInputStream(bArrayInputStream));
+
+        int ipLength = din.readInt();
+        byte[] ipBytes = new byte[ipLength];
+        din.readFully(ipBytes);
+        this.ip = new String(ipBytes);
+        this.port = din.readInt();
+        this.roundNumber = din.readInt();
+        this.payload = din.readInt();
+        this.timestamp = din.readLong();
+        this.threadId = din.readLong();
+        this.nonce = din.readInt();
     }
 
     public void setTimestamp() {
@@ -59,6 +76,30 @@ public class Task {
 
     public String toString() {
         return ip + ":" + port + ":" + roundNumber + ":" + payload + ":" + timestamp + ":" + threadId + ":" + nonce;
+    }
+
+    public byte[] getBytes() throws IOException {
+        byte[] marshalledBytes = null;
+        ByteArrayOutputStream baOutputStream = new ByteArrayOutputStream();
+        DataOutputStream dout = new DataOutputStream(new BufferedOutputStream(baOutputStream));
+
+        byte[] ipBytes = ip.getBytes();
+        int elementLength = ipBytes.length;
+        dout.writeInt(elementLength);
+        dout.write(ipBytes);
+
+        dout.writeInt(port);
+        dout.writeInt(roundNumber);
+        dout.writeInt(payload);
+        dout.writeLong(timestamp);
+        dout.writeLong(threadId);
+        dout.writeInt(nonce);
+
+        dout.flush();
+        marshalledBytes = baOutputStream.toByteArray();
+        baOutputStream.close();
+        dout.close();
+        return marshalledBytes;
     }
 
     public byte[] toBytes() {
