@@ -82,10 +82,6 @@ public class TaskManager {
         this.threadPool.addTasksToQueue(numTasks, this.round);
     }
 
-    private synchronized void pushTasksToThreadPool(int numTasks, String nodeId) {
-        this.threadPool.addTasksToQueue(numTasks, this.round, nodeId);
-    }
-
     private synchronized void pushTasksToThreadPool(List<Task> taskList) {
         this.threadPool.addTasksToQueue(taskList);
     }
